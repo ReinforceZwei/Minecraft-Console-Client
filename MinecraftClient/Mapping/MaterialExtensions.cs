@@ -14,7 +14,7 @@ namespace MinecraftClient.Mapping
         /// Check if the player cannot pass through the specified material
         /// </summary>
         /// <param name="m">Material to test</param>
-        /// <returns>True if the material is harmful</returns>
+        /// <returns>True if the material is solid</returns>
         public static bool IsSolid(this Material m)
         {
             switch (m)
@@ -310,9 +310,6 @@ namespace MinecraftClient.Mapping
                 case Material.PrismarineStairs:
                 case Material.PrismarineBrickStairs:
                 case Material.DarkPrismarineStairs:
-                case Material.PrismarineSlab:
-                case Material.PrismarineBrickSlab:
-                case Material.DarkPrismarineSlab:
                 case Material.SeaLantern:
                 case Material.HayBlock:
                 case Material.Terracotta:
@@ -322,25 +319,6 @@ namespace MinecraftClient.Mapping
                 case Material.ChiseledRedSandstone:
                 case Material.CutRedSandstone:
                 case Material.RedSandstoneStairs:
-                case Material.OakSlab:
-                case Material.SpruceSlab:
-                case Material.BirchSlab:
-                case Material.JungleSlab:
-                case Material.AcaciaSlab:
-                case Material.DarkOakSlab:
-                case Material.StoneSlab:
-                case Material.SmoothStoneSlab:
-                case Material.SandstoneSlab:
-                case Material.CutSandstoneSlab:
-                case Material.PetrifiedOakSlab:
-                case Material.CobblestoneSlab:
-                case Material.BrickSlab:
-                case Material.StoneBrickSlab:
-                case Material.NetherBrickSlab:
-                case Material.QuartzSlab:
-                case Material.RedSandstoneSlab:
-                case Material.CutRedSandstoneSlab:
-                case Material.PurpurSlab:
                 case Material.SmoothStone:
                 case Material.SmoothSandstone:
                 case Material.SmoothQuartz:
@@ -473,19 +451,6 @@ namespace MinecraftClient.Mapping
                 case Material.RedNetherBrickStairs:
                 case Material.PolishedAndesiteStairs:
                 case Material.DioriteStairs:
-                case Material.PolishedGraniteSlab:
-                case Material.SmoothRedSandstoneSlab:
-                case Material.MossyStoneBrickSlab:
-                case Material.PolishedDioriteSlab:
-                case Material.MossyCobblestoneSlab:
-                case Material.EndStoneBrickSlab:
-                case Material.SmoothSandstoneSlab:
-                case Material.SmoothQuartzSlab:
-                case Material.GraniteSlab:
-                case Material.AndesiteSlab:
-                case Material.RedNetherBrickSlab:
-                case Material.PolishedAndesiteSlab:
-                case Material.DioriteSlab:
                 case Material.BrickWall:
                 case Material.PrismarineWall:
                 case Material.RedSandstoneWall:
@@ -522,6 +487,53 @@ namespace MinecraftClient.Mapping
                 default:
                     return false;
             }
+        }
+
+        /// <summary>
+        /// Check if the material block is a slab
+        /// </summary>
+        /// <param name="m">Material to test</param>
+        /// <returns>True if the material is a slab</returns>
+        public static bool IsSlab(this Material m)
+        {
+            Material[] t = {
+                Material.PrismarineSlab,
+                Material.PrismarineBrickSlab,
+                Material.DarkPrismarineSlab,
+                Material.OakSlab,
+                Material.SpruceSlab,
+                Material.BirchSlab,
+                Material.JungleSlab,
+                Material.AcaciaSlab,
+                Material.DarkOakSlab,
+                Material.StoneSlab,
+                Material.SmoothStoneSlab,
+                Material.SandstoneSlab,
+                Material.CutSandstoneSlab,
+                Material.PetrifiedOakSlab,
+                Material.CobblestoneSlab,
+                Material.BrickSlab,
+                Material.StoneBrickSlab,
+                Material.NetherBrickSlab,
+                Material.QuartzSlab,
+                Material.RedSandstoneSlab,
+                Material.CutRedSandstoneSlab,
+                Material.PurpurSlab,
+                Material.PolishedGraniteSlab,
+                Material.SmoothRedSandstoneSlab,
+                Material.MossyStoneBrickSlab,
+                Material.PolishedDioriteSlab,
+                Material.MossyCobblestoneSlab,
+                Material.EndStoneBrickSlab,
+                Material.SmoothSandstoneSlab,
+                Material.SmoothQuartzSlab,
+                Material.GraniteSlab,
+                Material.AndesiteSlab,
+                Material.RedNetherBrickSlab,
+                Material.PolishedAndesiteSlab,
+                Material.DioriteSlab
+            };
+            return t.Contains(m);
         }
 
         /// <summary>
