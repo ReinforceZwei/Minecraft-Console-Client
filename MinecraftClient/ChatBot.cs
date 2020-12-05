@@ -358,7 +358,7 @@ namespace MinecraftClient
         /// <param name="text">Text to send to the server</param>
         /// <param name="sendImmediately">Whether the message should be sent immediately rather than being queued to avoid chat spam</param>
         /// <returns>TRUE if successfully sent (Deprectated, always returns TRUE for compatibility purposes with existing scripts)</returns>
-        protected bool SendText(string text, bool sendImmediately = false)
+        public bool SendText(string text, bool sendImmediately = false)
         {
             LogToConsole("Sending '" + text + "'");
             Handler.SendText(text);
@@ -371,7 +371,7 @@ namespace MinecraftClient
         /// <param name="command">The command to process</param>
         /// <param name="localVars">Local variables passed along with the command</param>
         /// <returns>TRUE if the command was indeed an internal MCC command</returns>
-        protected bool PerformInternalCommand(string command, Dictionary<string, object> localVars = null)
+        public bool PerformInternalCommand(string command, Dictionary<string, object> localVars = null)
         {
             string temp = "";
             return Handler.PerformInternalCommand(command, ref temp, localVars);
@@ -384,7 +384,7 @@ namespace MinecraftClient
         /// <param name="response_msg">May contain a confirmation or error message after processing the command, or "" otherwise.</param>
         /// <param name="localVars">Local variables passed along with the command</param>
         /// <returns>TRUE if the command was indeed an internal MCC command</returns>
-        protected bool PerformInternalCommand(string command, ref string response_msg, Dictionary<string, object> localVars = null)
+        public bool PerformInternalCommand(string command, ref string response_msg, Dictionary<string, object> localVars = null)
         {
             return Handler.PerformInternalCommand(command, ref response_msg, localVars);
         }
@@ -434,7 +434,7 @@ namespace MinecraftClient
         /// <param name="message">if it's a private message, this will contain the message</param>
         /// <param name="sender">if it's a private message, this will contain the player name that sends the message</param>
         /// <returns>Returns true if the text is a private message</returns>
-        protected static bool IsPrivateMessage(string text, ref string message, ref string sender)
+        public static bool IsPrivateMessage(string text, ref string message, ref string sender)
         {
             if (String.IsNullOrEmpty(text))
                 return false;
@@ -545,7 +545,7 @@ namespace MinecraftClient
         /// <param name="message">if it's message, this will contain the message</param>
         /// <param name="sender">if it's message, this will contain the player name that sends the message</param>
         /// <returns>Returns true if the text is a chat message</returns>
-        protected static bool IsChatMessage(string text, ref string message, ref string sender)
+        public static bool IsChatMessage(string text, ref string message, ref string sender)
         {
             if (String.IsNullOrEmpty(text))
                 return false;
@@ -648,7 +648,7 @@ namespace MinecraftClient
         /// <param name="text">Text to parse</param>
         /// <param name="sender">Will contain the sender's username, if it's a teleport request</param>
         /// <returns>Returns true if the text is a teleport request</returns>
-        protected static bool IsTeleportRequest(string text, ref string sender)
+        public static bool IsTeleportRequest(string text, ref string sender)
         {
             if (String.IsNullOrEmpty(text))
                 return false;
@@ -702,7 +702,7 @@ namespace MinecraftClient
         /// Write some text in the console. Nothing will be sent to the server.
         /// </summary>
         /// <param name="text">Log text to write</param>
-        protected void LogToConsole(object text)
+        public void LogToConsole(object text)
         {
             ConsoleIO.WriteLogLine(String.Format("[{0}] {1}", this.GetType().Name, text));
             string logfile = Settings.ExpandVars(Settings.chatbotLogFile);
@@ -725,7 +725,7 @@ namespace MinecraftClient
         /// Write some text in the console, but only if DebugMessages is enabled in INI file. Nothing will be sent to the server.
         /// </summary>
         /// <param name="text">Debug log text to write</param>
-        protected void LogDebugToConsole(object text)
+        public void LogDebugToConsole(object text)
         {
             if (Settings.DebugMessages)
                 LogToConsole(text);
@@ -736,7 +736,7 @@ namespace MinecraftClient
         /// </summary>
         /// <param name="key">Translation key</param>
         /// <param name="args"></param>
-        protected void LogToConsoleTranslated(string key, params object[] args)
+        public void LogToConsoleTranslated(string key, params object[] args)
         {
             LogToConsole(Translations.TryGet(key, args));
         }
@@ -746,7 +746,7 @@ namespace MinecraftClient
         /// </summary>
         /// <param name="key">Translation key</param>
         /// <param name="args"></param>
-        protected void LogDebugToConsoleTranslated(string key, params object[] args)
+        public void LogDebugToConsoleTranslated(string key, params object[] args)
         {
             LogDebugToConsole(Translations.TryGet(key, args));
         }
@@ -757,7 +757,7 @@ namespace MinecraftClient
         /// </summary>
         /// <param name="ExtraAttempts">In case of failure, maximum extra attempts before aborting</param>
         /// <param name="delaySeconds">Optional delay, in seconds, before restarting</param>
-        protected void ReconnectToTheServer(int ExtraAttempts = 3, int delaySeconds = 0)
+        public void ReconnectToTheServer(int ExtraAttempts = 3, int delaySeconds = 0)
         {
             if (Settings.DebugMessages)
                 ConsoleIO.WriteLogLine(Translations.Get("chatbot.reconnect", this.GetType().Name));
@@ -768,7 +768,7 @@ namespace MinecraftClient
         /// <summary>
         /// Disconnect from the server and exit the program
         /// </summary>
-        protected void DisconnectAndExit()
+        public void DisconnectAndExit()
         {
             Program.Exit();
         }
@@ -776,7 +776,7 @@ namespace MinecraftClient
         /// <summary>
         /// Unload the chatbot, and release associated memory.
         /// </summary>
-        protected void UnloadBot()
+        public void UnloadBot()
         {
             Handler.BotUnLoad(this);
         }
@@ -786,7 +786,7 @@ namespace MinecraftClient
         /// </summary>
         /// <param name="player">Player name</param>
         /// <param name="message">Message</param>
-        protected void SendPrivateMessage(string player, string message)
+        public void SendPrivateMessage(string player, string message)
         {
             SendText(String.Format("/{0} {1} {2}", Settings.PrivateMsgsCmdName, player, message));
         }
@@ -797,7 +797,7 @@ namespace MinecraftClient
         /// <param name="filename">File name</param>
         /// <param name="playername">Player name to send error messages, if applicable</param>
         /// <param name="localVars">Local variables for use in the Script</param>
-        protected void RunScript(string filename, string playername = null, Dictionary<string, object> localVars = null)
+        public void RunScript(string filename, string playername = null, Dictionary<string, object> localVars = null)
         {
             Handler.BotLoad(new ChatBots.Script(filename, playername, localVars));
         }
@@ -806,7 +806,7 @@ namespace MinecraftClient
         /// Load an additional ChatBot
         /// </summary>
         /// <param name="chatBot">ChatBot to load</param>
-        protected void BotLoad(ChatBot chatBot)
+        public void BotLoad(ChatBot chatBot)
         {
             Handler.BotLoad(chatBot);
         }
@@ -844,7 +844,7 @@ namespace MinecraftClient
         /// <summary>
         /// start Sneaking
         /// </summary>
-        protected bool Sneak(bool on)
+        public bool Sneak(bool on)
         {
             return SendEntityAction(on ? Protocol.EntityActionType.StartSneaking : Protocol.EntityActionType.StopSneaking);
         }
@@ -863,7 +863,7 @@ namespace MinecraftClient
         /// <param name="location">Location of block to dig</param>
         /// <param name="swingArms">Also perform the "arm swing" animation</param>
         /// <param name="lookAtBlock">Also look at the block before digging</param>
-        protected bool DigBlock(Location location, bool swingArms = true, bool lookAtBlock = true)
+        public bool DigBlock(Location location, bool swingArms = true, bool lookAtBlock = true)
         {
             return Handler.DigBlock(location, swingArms, lookAtBlock);
         }
@@ -871,7 +871,7 @@ namespace MinecraftClient
         /// <summary>
         /// SetSlot
         /// </summary>
-        protected void SetSlot(int slotNum)
+        public void SetSlot(int slotNum)
         {
             Handler.ChangeSlot((short)slotNum);
         }
@@ -880,7 +880,7 @@ namespace MinecraftClient
         /// Get the current Minecraft World
         /// </summary>
         /// <returns>Minecraft world or null if associated setting is disabled</returns>
-        protected Mapping.World GetWorld()
+        public Mapping.World GetWorld()
         {
             if (GetTerrainEnabled())
                 return Handler.GetWorld();
@@ -891,7 +891,7 @@ namespace MinecraftClient
         /// Get all Entities
         /// </summary>
         /// <returns>All Entities</returns>
-        protected Dictionary<int, Entity> GetEntities()
+        public Dictionary<int, Entity> GetEntities()
         {
             return Handler.GetEntities();
         }
@@ -900,7 +900,7 @@ namespace MinecraftClient
         /// Get all players Latency
         /// </summary>
         /// <returns>All players latency</returns>
-        protected Dictionary<string, int> GetPlayersLatency()
+        public Dictionary<string, int> GetPlayersLatency()
         {
             return Handler.GetPlayersLatency();
         }
@@ -909,7 +909,7 @@ namespace MinecraftClient
         /// Get the current location of the player (Feet location)
         /// </summary>
         /// <returns>Minecraft world or null if associated setting is disabled</returns>
-        protected Mapping.Location GetCurrentLocation()
+        public Mapping.Location GetCurrentLocation()
         {
             return Handler.GetCurrentLocation();
         }
@@ -921,7 +921,7 @@ namespace MinecraftClient
         /// <param name="allowUnsafe">Allow possible but unsafe locations thay may hurt the player: lava, cactus...</param>
         /// <param name="allowDirectTeleport">Allow non-vanilla teleport instead of computing path, but may cause invalid moves and/or trigger anti-cheat plugins</param>
         /// <returns>True if a path has been found</returns>
-        protected bool MoveToLocation(Mapping.Location location, bool allowUnsafe = false, bool allowDirectTeleport = false)
+        public bool MoveToLocation(Mapping.Location location, bool allowUnsafe = false, bool allowDirectTeleport = false)
         {
             return Handler.MoveTo(location, allowUnsafe, allowDirectTeleport);
         }
@@ -930,7 +930,7 @@ namespace MinecraftClient
         /// Look at the specified location
         /// </summary>
         /// <param name="location">Location to look at</param>
-        protected void LookAtLocation(Mapping.Location location)
+        public void LookAtLocation(Mapping.Location location)
         {
             Handler.UpdateLocation(Handler.GetCurrentLocation(), location);
         }
@@ -938,7 +938,7 @@ namespace MinecraftClient
         /// <summary>
         /// Get a Y-M-D h:m:s timestamp representing the current system date and time
         /// </summary>
-        protected static string GetTimestamp()
+        public static string GetTimestamp()
         {
             DateTime time = DateTime.Now;
             return String.Format("{0}-{1}-{2} {3}:{4}:{5}",
@@ -955,7 +955,7 @@ namespace MinecraftClient
         /// </summary>
         /// <param name="file">File to load</param>
         /// <returns>The string array or an empty array if failed to load the file</returns>
-        protected string[] LoadDistinctEntriesFromFile(string file)
+        public string[] LoadDistinctEntriesFromFile(string file)
         {
             if (File.Exists(file))
             {
@@ -977,7 +977,7 @@ namespace MinecraftClient
         /// Return the Server Port where the client is connected to
         /// </summary>
         /// <returns>Server Port where the client is connected to</returns>
-        protected int GetServerPort()
+        public int GetServerPort()
         {
             return Handler.GetServerPort();
         }
@@ -986,7 +986,7 @@ namespace MinecraftClient
         /// Return the Server Host where the client is connected to
         /// </summary>
         /// <returns>Server Host where the client is connected to</returns>
-        protected string GetServerHost()
+        public string GetServerHost()
         {
             return Handler.GetServerHost();
         }
@@ -995,7 +995,7 @@ namespace MinecraftClient
         /// Return the Username of the current account
         /// </summary>
         /// <returns>Username of the current account</returns>
-        protected string GetUsername()
+        public string GetUsername()
         {
             return Handler.GetUsername();
         }
@@ -1004,7 +1004,7 @@ namespace MinecraftClient
         /// Return the Gamemode of the current account
         /// </summary>
         /// <returns>Username of the current account</returns>
-        protected int GetGamemode()
+        public int GetGamemode()
         {
             return Handler.GetGamemode();
         }
@@ -1013,7 +1013,7 @@ namespace MinecraftClient
         /// Return the UserUUID of the current account
         /// </summary>
         /// <returns>UserUUID of the current account</returns>
-        protected string GetUserUUID()
+        public string GetUserUUID()
         {
             return Handler.GetUserUUID();
         }
@@ -1022,7 +1022,7 @@ namespace MinecraftClient
         /// Return the list of currently online players
         /// </summary>
         /// <returns>List of online players</returns>
-        protected string[] GetOnlinePlayers()
+        public string[] GetOnlinePlayers()
         {
             return Handler.GetOnlinePlayers();
         }
@@ -1034,7 +1034,7 @@ namespace MinecraftClient
         ///     dictionary of online player whereby
         ///     UUID represents the key
         ///     playername represents the value</returns>
-        protected Dictionary<string, string> GetOnlinePlayersWithUUID()
+        public Dictionary<string, string> GetOnlinePlayersWithUUID()
         {
             return Handler.GetOnlinePlayersWithUUID();
         }
@@ -1043,7 +1043,7 @@ namespace MinecraftClient
         /// Registers the given plugin channel for use by this chatbot.
         /// </summary>
         /// <param name="channel">The name of the channel to register</param>
-        protected void RegisterPluginChannel(string channel)
+        public void RegisterPluginChannel(string channel)
         {
             this.registeredPluginChannels.Add(channel);
             Handler.RegisterPluginChannel(channel, this);
@@ -1053,7 +1053,7 @@ namespace MinecraftClient
         /// Unregisters the given plugin channel, meaning this chatbot can no longer use it.
         /// </summary>
         /// <param name="channel">The name of the channel to unregister</param>
-        protected void UnregisterPluginChannel(string channel)
+        public void UnregisterPluginChannel(string channel)
         {
             this.registeredPluginChannels.RemoveAll(chan => chan == channel);
             Handler.UnregisterPluginChannel(channel, this);
@@ -1067,7 +1067,7 @@ namespace MinecraftClient
         /// <param name="data">The data to send.</param>
         /// <param name="sendEvenIfNotRegistered">Should the message be sent even if it hasn't been registered by the server or this bot?  (Some Minecraft channels aren't registered)</param>
         /// <returns>Whether the message was successfully sent.  False if there was a network error or if the channel wasn't registered.</returns>
-        protected bool SendPluginChannelMessage(string channel, byte[] data, bool sendEvenIfNotRegistered = false)
+        public bool SendPluginChannelMessage(string channel, byte[] data, bool sendEvenIfNotRegistered = false)
         {
             if (!sendEvenIfNotRegistered)
             {
@@ -1083,7 +1083,7 @@ namespace MinecraftClient
         /// Get server current TPS (tick per second)
         /// </summary>
         /// <returns>tps</returns>
-        protected Double GetServerTPS()
+        public Double GetServerTPS()
         {
             return Handler.GetServerTPS();
         }
@@ -1095,7 +1095,7 @@ namespace MinecraftClient
         /// <param name="type">0: interact, 1: attack, 2: interact at</param>
         /// <param name="hand">Hand.MainHand or Hand.OffHand</param>
         /// <returns>TRUE in case of success</returns>
-        protected bool InteractEntity(int EntityID, int type, Hand hand = Hand.MainHand)
+        public bool InteractEntity(int EntityID, int type, Hand hand = Hand.MainHand)
         {
             return Handler.InteractEntity(EntityID, type, hand);
         }
@@ -1109,7 +1109,7 @@ namespace MinecraftClient
         /// <param name="itemType">Item type</param>
         /// <param name="count">Item count</param>
         /// <returns>TRUE if item given successfully</returns>
-        protected bool CreativeGive(int slot, ItemType itemType, int count, Dictionary<string, object> nbt = null)
+        public bool CreativeGive(int slot, ItemType itemType, int count, Dictionary<string, object> nbt = null)
         {
             return Handler.DoCreativeGive(slot, itemType, count, nbt);
         }
@@ -1128,7 +1128,7 @@ namespace MinecraftClient
         /// Use item currently in the player's hand (active inventory bar slot)
         /// </summary>
         /// <returns>TRUE if successful</returns>
-        protected bool UseItemInHand()
+        public bool UseItemInHand()
         {
             return Handler.UseItemOnHand();
         }
@@ -1158,7 +1158,7 @@ namespace MinecraftClient
         /// Get the player's inventory. Do not write to it, will not have any effect server-side.
         /// </summary>
         /// <returns>Player inventory</returns>
-        protected Container GetPlayerInventory()
+        public Container GetPlayerInventory()
         {
             Container container = Handler.GetPlayerInventory();
             return container == null ? null : new Container(container.ID, container.Type, container.Title, container.Items);
@@ -1180,7 +1180,7 @@ namespace MinecraftClient
         /// <param name="slot">Slot ID</param>
         /// <param name="actionType">Action Type</param>
         /// <returns>TRUE in case of success</returns>
-        protected bool WindowAction(int inventoryId, int slot, WindowActionType actionType)
+        public bool WindowAction(int inventoryId, int slot, WindowActionType actionType)
         {
             return Handler.DoWindowAction(inventoryId, slot, actionType);
         }
@@ -1190,7 +1190,7 @@ namespace MinecraftClient
         /// </summary>
         /// <param name="container">Inventory Container</param>
         /// <returns>ItemMovingHelper instance</returns>
-        protected ItemMovingHelper GetItemMovingHelper(Container container)
+        public ItemMovingHelper GetItemMovingHelper(Container container)
         {
             return new ItemMovingHelper(container, Handler);
         }
@@ -1200,7 +1200,7 @@ namespace MinecraftClient
         /// </summary>
         /// <param name="slot">0-8</param>
         /// <returns>True if success</returns>
-        protected bool ChangeSlot(short slot)
+        public bool ChangeSlot(short slot)
         {
             return Handler.ChangeSlot(slot);
         }
@@ -1209,7 +1209,7 @@ namespace MinecraftClient
         /// Get current player selected hotbar slot
         /// </summary>
         /// <returns>0-8</returns>
-        protected byte GetCurrentSlot()
+        public byte GetCurrentSlot()
         {
             return Handler.GetCurrentSlot();
         }
@@ -1218,7 +1218,7 @@ namespace MinecraftClient
         /// Clean all inventory
         /// </summary>
         /// <returns>TRUE if the uccessfully clear</returns>
-        protected bool ClearInventories()
+        public bool ClearInventories()
         {
             return Handler.ClearInventories();
         }
@@ -1231,7 +1231,7 @@ namespace MinecraftClient
         /// <param name="line2"> text two</param>
         /// <param name="line3"> text three</param>
         /// <param name="line4"> text1 four</param>
-        protected bool UpdateSign(Location location, string line1, string line2, string line3, string line4)
+        public bool UpdateSign(Location location, string line1, string line2, string line3, string line4)
         {
             return Handler.UpdateSign(location, line1, line2, line3, line4);
         }
@@ -1240,7 +1240,7 @@ namespace MinecraftClient
         /// Selects villager trade
         /// </summary>
         /// <param name="selectedSlot">Trade slot to select, starts at 0.</param>
-        protected bool SelectTrade(int selectedSlot)
+        public bool SelectTrade(int selectedSlot)
         {
             return Handler.SelectTrade(selectedSlot);
         }
@@ -1252,7 +1252,7 @@ namespace MinecraftClient
         /// <param name="command">command</param>
         /// <param name="mode">command block mode</param>
         /// <param name="flags">command block flags</param>
-        protected bool UpdateCommandBlock(Location location, string command, CommandBlockMode mode, CommandBlockFlags flags)
+        public bool UpdateCommandBlock(Location location, string command, CommandBlockMode mode, CommandBlockFlags flags)
         {
             return Handler.UpdateCommandBlock(location, command, mode, flags);
         }
@@ -1264,7 +1264,7 @@ namespace MinecraftClient
         /// <param name="cmdDesc">Description/usage of the command</param>
         /// <param name="callback">Method for handling the command</param>
         /// <returns>True if successfully registered</returns>
-        protected bool RegisterChatBotCommand(string cmdName, string cmdDesc, string cmdUsage, CommandRunner callback)
+        public bool RegisterChatBotCommand(string cmdName, string cmdDesc, string cmdUsage, CommandRunner callback)
         {
             return Handler.RegisterCommand(cmdName, cmdDesc, cmdUsage, callback);
         }
@@ -1274,7 +1274,7 @@ namespace MinecraftClient
         /// </summary>
         /// <param name="inventoryID"></param>
         /// <returns>True if success</returns>
-        protected bool CloseInventory(int inventoryID)
+        public bool CloseInventory(int inventoryID)
         {
             return Handler.CloseInventory(inventoryID);
         }
@@ -1283,7 +1283,7 @@ namespace MinecraftClient
         /// Get max length for chat messages
         /// </summary>
         /// <returns>Max length, in characters</returns>
-        protected int GetMaxChatMessageLength()
+        public int GetMaxChatMessageLength()
         {
             return Handler.GetMaxChatMessageLength();
         }
@@ -1291,7 +1291,7 @@ namespace MinecraftClient
         /// <summary>
         /// Respawn player
         /// </summary>
-        protected bool Respawn()
+        public bool Respawn()
         {
             if (Handler.GetHealth() <= 0)
                 return Handler.SendRespawnPacket();
@@ -1305,7 +1305,7 @@ namespace MinecraftClient
         /// Enable this may increase memory usage.
         /// </remarks>
         /// <param name="enabled"></param>
-        protected void SetNetworkPacketEventEnabled(bool enabled)
+        public void SetNetworkPacketEventEnabled(bool enabled)
         {
             Handler.SetNetworkPacketCaptureEnabled(enabled);
         }
@@ -1314,7 +1314,7 @@ namespace MinecraftClient
         /// Get the minecraft protcol number currently in use
         /// </summary>
         /// <returns>Protcol number</returns>
-        protected int GetProtocolVersion()
+        public int GetProtocolVersion()
         {
             return Handler.GetProtocolVersion();
         }
