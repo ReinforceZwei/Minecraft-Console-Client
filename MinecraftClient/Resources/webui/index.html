@@ -36,7 +36,7 @@
     let lastHeartBeat = Date.now();
     let heartBeatTimerID;
     let retry = 3;
-    let host = location.href;
+    let host = location.host;
     let ws; // = new WebSocket("ws://" + host + "/data");
     wsConnect("ws://" + host + "/data");
 

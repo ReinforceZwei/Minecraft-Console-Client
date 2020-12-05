@@ -25,7 +25,7 @@ namespace MinecraftClient.ChatBots
             MessageCache = new Queue<string>(MessageRelayLimit);
             http = new HttpServer(serverPort);
             http.OnGet += Http_OnGet;
-            http.AddWebSocketService<DataChannel>("/data", () => new DataChannel(this));
+            http.AddWebSocketService<DataChannel>("/data", delegate(DataChannel d) { d.SetRef(this); });
             http.WebSocketServices.TryGetServiceHost("/data", out host);
             http.Start();
             if (http.IsListening)
@@ -95,6 +95,11 @@ namespace MinecraftClient.ChatBots
         public DataChannel(WebUI eventRef)
         {
             botEvent = eventRef;
+        }
+
+        public void SetRef(WebUI w)
+        {
+            botEvent = w;
         }
 
         protected override void OnOpen()
