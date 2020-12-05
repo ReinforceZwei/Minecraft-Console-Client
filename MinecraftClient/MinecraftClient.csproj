@@ -74,6 +74,7 @@
   <ItemGroup>
     <Compile Include="AutoTimeout.cs" />
     <Compile Include="ChatBots\AutoDrop.cs" />
+    <Compile Include="ChatBots\Look.cs" />
     <Compile Include="ChatBots\Mailer.cs" />
     <Compile Include="ChatBots\ReplayCapture.cs" />
     <Compile Include="Commands\Entitycmd.cs" />
@@ -157,6 +158,7 @@
     <Compile Include="Mapping\EntityPalettes\EntityPaletteGenerator.cs" />
     <Compile Include="Mapping\EntityTypeExtensions.cs" />
     <Compile Include="Mapping\MaterialExtensions.cs" />
+    <Compile Include="Mapping\Vector3.cs" />
     <Compile Include="Protocol\EntityActionType.cs" />
     <Compile Include="Protocol\GuidExtensions.cs" />
     <Compile Include="Protocol\Handlers\Compression\DeflateStream.cs" />

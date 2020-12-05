@@ -914,6 +914,16 @@ namespace MinecraftClient
             return Handler.GetCurrentLocation();
         }
 
+        protected float GetYaw()
+        {
+            return Handler.GetYaw();
+        }
+
+        protected float GetPitch()
+        {
+            return Handler.GetPitch();
+        }
+
         /// <summary>
         /// Move to the specified location
         /// </summary>
