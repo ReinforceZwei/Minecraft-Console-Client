@@ -30,6 +30,7 @@ namespace MinecraftClient.ChatBots
     // TODO: 
     // Handle disconnect message
     // Handle MCC quit by user
+    // How to redirect all console message?
     class WebUI : ChatBot
     {
         private int serverPort = 8080;
@@ -48,6 +49,7 @@ namespace MinecraftClient.ChatBots
         public override void Initialize()
         {
             MessageCache = new Queue<string>(MessageRelayLimit);
+            ConsoleIO.WriteLineEvent += ConsoleIOWriteLineEvent;
             http = new HttpServer(serverPort);
             http.OnGet += HttpOnGet;
             http.AddWebSocketService<DataChannel>("/data", delegate (DataChannel d) { d.SetRef(this); });
@@ -80,6 +82,12 @@ namespace MinecraftClient.ChatBots
                 {"More", new List<float> { 1.11f, 2.123f, 3.1415f, 444 } }
             };
             ConsoleIO.WriteLine(JsonMaker.ToJson(dict));
+        }
+
+        private void ConsoleIOWriteLineEvent(string text)
+        {
+            EnqueueMessage(text);
+            host.Sessions.Broadcast(DataExchange.ToClient("chat", text));
         }
 
         public void EnqueueMessage(string msg)
@@ -131,8 +139,8 @@ namespace MinecraftClient.ChatBots
 
         public override void GetText(string text)
         {
-            EnqueueMessage(text);
-            host.Sessions.Broadcast(DataExchange.ToClient("chat", text));
+            //EnqueueMessage(text);
+            //host.Sessions.Broadcast(DataExchange.ToClient("chat", text));
         }
 
         #endregion
@@ -167,41 +175,48 @@ namespace MinecraftClient.ChatBots
                 ConsoleIO.WriteLine("Ws connection not up but data incoming");
                 return;
             }
-            ConsoleIO.WriteLine(string.Format("Got ws msg: {0}", e.Data));
-            var pair = DataExchange.FromClient(e.Data);
-            string action = pair.Key;
-            string data = pair.Value;
-            ConsoleIO.WriteLine(string.Format("action: {0}, data: {1}", action, data));
-            switch (action.ToLower())
+            try
             {
-                case "input":
-                    string text = data.Trim();
-                    if (text.Length > 0)
-                    {
-                        if (Settings.internalCmdChar == ' ' || text[0] == Settings.internalCmdChar)
+                ConsoleIO.WriteLine(string.Format("Got ws msg: {0}", e.Data));
+                var pair = DataExchange.FromClient(e.Data);
+                string action = pair.Key;
+                string data = pair.Value;
+                ConsoleIO.WriteLine(string.Format("action: {0}, data: {1}", action, data));
+                switch (action.ToLower())
+                {
+                    case "input":
+                        string text = data.Trim();
+                        if (text.Length > 0)
                         {
-                            string response_msg = "";
-                            string command = Settings.internalCmdChar == ' ' ? text : text.Substring(1);
-                            if (!botEvent.PerformInternalCommand(Settings.ExpandVars(command), ref response_msg) && Settings.internalCmdChar == '/')
+                            if (Settings.internalCmdChar == ' ' || text[0] == Settings.internalCmdChar)
                             {
-                                botEvent.SendText(text);
+                                string response_msg = "";
+                                string command = Settings.internalCmdChar == ' ' ? text : text.Substring(1);
+                                if (!botEvent.PerformInternalCommand(Settings.ExpandVars(command), ref response_msg) && Settings.internalCmdChar == '/')
+                                {
+                                    botEvent.SendText(text);
+                                }
+                                else if (response_msg.Length > 0)
+                                {
+                                    Send(DataExchange.ToClient("chat", response_msg));
+                                }
                             }
-                            else if (response_msg.Length > 0)
-                            {
-                                Send(DataExchange.ToClient("chat", response_msg));
-                            }
+                            else botEvent.SendText(text);
                         }
-                        else botEvent.SendText(text);
-                    }
-                    return;
+                        return;
 
-                case "ping":
-                    Send(DataExchange.ToClient("pong", ""));
-                    break;
+                    case "ping":
+                        Send(DataExchange.ToClient("pong", ""));
+                        break;
 
-                default: 
-                    Send(e.Data); 
-                    break;
+                    default:
+                        Send(e.Data);
+                        break;
+                }
+            }
+            catch (Exception exception)
+            {
+                ConsoleIO.WriteLine("Got exception while handling WebClient message:\n" + exception.Message);
             }
         }
     }
@@ -345,7 +360,13 @@ namespace MinecraftClient.ChatBots
 
         private static string EscapeString(string str)
         {
-            return str.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            return str.Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\n", "\\n")
+                .Replace("\t", "\\t")
+                .Replace("\r", "\\r")
+                .Replace("\b", "\\b")
+                .Replace("\f", "\\f");
         }
     }
 }

@@ -23,6 +23,13 @@ namespace MinecraftClient
         private static string buffer = "";
         private static string buffer2 = "";
 
+        public delegate void OnWriteLine(string text);
+
+        /// <summary>
+        /// Fires when some text being written to console
+        /// </summary>
+        public static event OnWriteLine WriteLineEvent;
+
         /// <summary>
         /// Reset the IO mechanism and clear all buffers
         /// </summary>
@@ -293,6 +300,8 @@ namespace MinecraftClient
                 }
             }
             else Console.Write(text);
+            if (WriteLineEvent != null) 
+                WriteLineEvent(text);
         }
 
         /// <summary>

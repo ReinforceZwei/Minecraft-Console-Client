@@ -47,12 +47,12 @@
         }
         let text = s("#input")[0].value;
         ws.send(toServer("input", text));
-        appendChat(">" + text);
+        appendChat(">" + text + "\n");
         s("#input")[0].value = "";
     }
 
     function appendChat(line){
-        s("#chat")[0].value += line + "\n";
+        s("#chat")[0].value += line;// + "\n";
         scrollToBottom("chat");
     }
 
