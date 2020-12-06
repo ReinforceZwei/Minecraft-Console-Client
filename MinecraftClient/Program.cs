@@ -484,7 +484,16 @@ namespace MinecraftClient
         public static Type[] GetTypesInNamespace(string nameSpace, Assembly assembly = null)
         {
             if (assembly == null) { assembly = Assembly.GetExecutingAssembly(); }
-            return assembly.GetTypes().Where(t => String.Equals(t.Namespace, nameSpace, StringComparison.Ordinal)).ToArray();
+            // If some assembly/DLL not loaded at the time this
+            // method is called, GetTypes() will throw exception
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException e)
+            {
+                return e.Types.Where(t => t != null && string.Equals(t.Namespace, nameSpace, StringComparison.Ordinal)).ToArray();
+            }
         }
 
         /// <summary>

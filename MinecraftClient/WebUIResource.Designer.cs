@@ -71,18 +71,47 @@ namespace MinecraftClient {
         }
         
         /// <summary>
-        ///   查詢類似 &lt;h1&gt;Hello&lt;/h1&gt;
-        ///&lt;textarea id=&quot;chat&quot;&gt;&lt;/textarea&gt;
-        ///&lt;input id=&quot;input&quot; type=&quot;text&quot;&gt;
-        ///&lt;input type=&quot;button&quot; onclick=&quot;submit()&quot;&gt;
-        ///&lt;div id=&quot;log&quot;&gt;&lt;/div&gt;
+        ///   查詢類似 &lt;!DOCTYPE html&gt;
+        ///&lt;html&gt;
+        ///&lt;head&gt;
+        ///&lt;meta charset=&quot;UTF-8&quot;&gt;
+        ///&lt;style&gt;
+        ///    html, body { margin: 0; padding: 0; height: 100%; width: 100%; }
+        ///    .title {
+        ///        font-size: 30px;
+        ///    }
+        ///    .logo {
+        ///        width: 25px;
+        ///        height: 25px;
+        ///    }
+        ///    #chat {
+        ///        width: 95%;
+        ///        height: 70%;
+        ///        resize: none;
+        ///    }
+        ///    #input {
+        ///        width: 70%;
+        ///    }
+        ///&lt;/style&gt;
+        ///&lt;/head&gt;
         ///
-        ///&lt;!-- Taken from https://github.com/ChrisHouston/s --&gt;
-        ///&lt;script type=&quot;text/javascript&quot;&gt;!function(){function a(b,c){return a.find(b,c)}function b(c){for(var d=this,e=0;e&lt;c.length;e++)this[e]=c[e];this.length=c.length,this.addClass=function(b){for(var c=d.length-1;c&gt;-1;c--)a.addClass(d[c],b);return d},this.removeClass=function(b){for(var c=d.length-1;c&gt;-1;c--)a.remo [字串的其餘部分已遭截斷]&quot;; 的當地語系化字串。
+        ///&lt;body&gt;
+        ///    &lt;span class=&quot;title&quot;&gt;&lt;img src=&quot;favicon.ico&quot; class=&quot;logo&quot;&gt;Minecraft Console Client WebUI&lt;/span&gt;
+        ///    &lt;tex [字串的其餘部分已遭截斷]&quot;; 的當地語系化字串。
         /// </summary>
         internal static string index {
             get {
                 return ResourceManager.GetString("index", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查詢類型 System.Byte[] 的當地語系化資源。
+        /// </summary>
+        internal static byte[] websocket_sharp {
+            get {
+                object obj = ResourceManager.GetObject("websocket_sharp", resourceCulture);
+                return ((byte[])(obj));
             }
         }
     }

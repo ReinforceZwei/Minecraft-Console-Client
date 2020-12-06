@@ -35,7 +35,8 @@
 <script type="text/javascript">
     let lastHeartBeat = Date.now();
     let heartBeatTimerID;
-    let retry = 3;
+    let maxRetry = 3;
+    let retry = maxRetry;
     let host = location.host;
     let ws; // = new WebSocket("ws://" + host + "/data");
     wsConnect("ws://" + host + "/data");
@@ -45,7 +46,7 @@
             if (event.keyCode !== 13) return;
         }
         let text = s("#input")[0].value;
-        ws.send("input|" + text);
+        ws.send(toServer("input", text));
         appendChat(">" + text);
         s("#input")[0].value = "";
     }
@@ -57,6 +58,14 @@
 
     function scrollToBottom(id){
         document.getElementById(id).scrollTop = document.getElementById(id).scrollHeight
+    }
+
+    function toServer(action, payload){
+        return JSON.stringify({"action":action, "data": payload});
+    }
+
+    function fromServer(rawData){
+        return JSON.parse(rawData);
     }
 
     let colorCodeReg = new RegExp(String.fromCharCode(167) + ".", "gm"); // Minecraft color code
@@ -73,10 +82,9 @@
 
     function wsOnMessage(e) {
         console.log(e);
-        let splitIndex = e.data.indexOf("|");
-        if (splitIndex === -1) splitIndex = e.data.length;
-        let action = e.data.substr(0, splitIndex);
-        let data = e.data.substr(splitIndex + 1);
+        let json = fromServer(e.data);
+        let action = json.action;
+        let data = json.data;
         
         switch (action){
             case "chat":{
@@ -85,32 +93,38 @@
             }
             case "pong":{
                 onHeartBeat();
+                break;
             }
             default: {
-                s("#log")[0].innerText += e.data + "\n";
+                if (data) s("#log")[0].innerText += data + "\n";
             }
         }
     }
 
     function wsOnOpen(e) {
         console.log("Connected to MCC");
-        ws.send("Connected");
+        ws.send(toServer("none", "Connected"));
         doHeartBeat();
         heartBeatTimerID = setInterval(()=>{
             doHeartBeat();
-        }, 25000)
+        }, 25000);
+        retry = maxRetry;
     }
 
     function wsOnClose(){
         clearInterval(heartBeatTimerID);
+        appendChat("Connection to MCC lost. Wait 5 seconds before reconnect.");
         if (retry <= 0){
-            console.log("Retry attempt exceed");
-            alert("Connection to MCC is lost and not able to reconnect.\nPlease check your MCC client status and refresh the page");
+            appendChat("Retry attempt exceeded.");
+            alert("Not able to reconnect.\nPlease check your MCC client status and refresh the page");
             return;
+        }else{
+            setTimeout(()=>{
+                appendChat("Reconnecting...");
+                wsConnect("ws://" + host + "/data");
+                retry--;
+            }, 5000);
         }
-        console.log("Connection to MCC lost. Reconnecting...");
-        wsConnect("ws://" + host + "/data");
-        retry--;
     }
 
     function doHeartBeat(){
@@ -118,7 +132,7 @@
         if ((Date.now() - lastHeartBeat) > 30000){
             ws.close();
         }
-        ws.send("ping");
+        ws.send(toServer("ping", ""));
     }
 
     function onHeartBeat(){
