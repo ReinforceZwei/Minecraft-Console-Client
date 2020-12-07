@@ -74,6 +74,7 @@ namespace MinecraftClient
         private byte CurrentSlot = 0;
 
         // Entity handling
+        private object entityLock = new object();
         private Dictionary<int, Entity> entities = new Dictionary<int, Entity>();
 
         // server TPS
@@ -199,7 +200,7 @@ namespace MinecraftClient
                     if (Settings.AutoDrop_Enabled) { BotLoad(new AutoDrop(Settings.AutoDrop_Mode, Settings.AutoDrop_items)); }
                     if (Settings.ReplayMod_Enabled) { BotLoad(new ReplayCapture(Settings.ReplayMod_BackupInterval)); }
                     
-                    if (WebUIEnabled) BotLoad(new WebUI());
+                    if (WebUIEnabled) BotLoad(new WebUI(this));
                     //Add your ChatBot here by uncommenting and adapting
                     //BotLoad(new ChatBots.YourBot());
                 }
@@ -805,7 +806,10 @@ namespace MinecraftClient
         /// <returns>All Entities</returns>
         public Dictionary<int, Entity> GetEntities()
         {
-            return entities;
+            lock (entityLock)
+            {
+                return new Dictionary<int, Entity>(entities);
+            }
         }
 
         /// <summary>
@@ -1376,18 +1380,21 @@ namespace MinecraftClient
         /// <returns>TRUE if interaction succeeded</returns>
         public bool InteractEntity(int EntityID, int type, Hand hand = Hand.MainHand)
         {
-            if (entities.ContainsKey(EntityID))
+            lock (entityLock)
             {
-                if (type == 0)
+                if (entities.ContainsKey(EntityID))
                 {
-                    return handler.SendInteractEntity(EntityID, type, (int)hand);
+                    if (type == 0)
+                    {
+                        return handler.SendInteractEntity(EntityID, type, (int)hand);
+                    }
+                    else
+                    {
+                        return handler.SendInteractEntity(EntityID, type);
+                    }
                 }
-                else
-                {
-                    return handler.SendInteractEntity(EntityID, type);
-                }
+                else { return false; }
             }
-            else { return false; }
         }
 
         /// <summary>
@@ -1588,7 +1595,10 @@ namespace MinecraftClient
                 world.Clear();
             }
 
-            entities.Clear();
+            lock (entityLock)
+            {
+                entities.Clear();
+            }
             ClearInventories();
             DispatchBotEvent(bot => bot.OnRespawn());
         }
@@ -1897,12 +1907,15 @@ namespace MinecraftClient
         /// </summary>
         public void OnSpawnEntity(Entity entity)
         {
-            // The entity should not already exist, but if it does, let's consider the previous one is being destroyed
-            if (entities.ContainsKey(entity.ID))
-                OnDestroyEntities(new[] { entity.ID });
+            lock (entityLock)
+            {
+                // The entity should not already exist, but if it does, let's consider the previous one is being destroyed
+                if (entities.ContainsKey(entity.ID))
+                    OnDestroyEntities(new[] { entity.ID });
 
-            entities.Add(entity.ID, entity);
-            DispatchBotEvent(bot => bot.OnEntitySpawn(entity));
+                entities.Add(entity.ID, entity);
+                DispatchBotEvent(bot => bot.OnEntitySpawn(entity));
+            }
         }
         
         /// <summary>
@@ -1910,8 +1923,11 @@ namespace MinecraftClient
         /// </summary>
         public void OnEntityEffect(int entityid, Effects effect, int amplifier, int duration, byte flags)
         {
-            if (entities.ContainsKey(entityid))
-                DispatchBotEvent(bot => bot.OnEntityEffect(entities[entityid], effect, amplifier, duration, flags));
+            lock (entityLock)
+            {
+                if (entities.ContainsKey(entityid))
+                    DispatchBotEvent(bot => bot.OnEntityEffect(entities[entityid], effect, amplifier, duration, flags));
+            }
         }
 
         /// <summary>
@@ -1934,14 +1950,17 @@ namespace MinecraftClient
         /// <param name="item"> Item)</param>
         public void OnEntityEquipment(int entityid, int slot, Item item)
         {
-            if (entities.ContainsKey(entityid))
+            lock (entityLock)
             {
-                Entity entity = entities[entityid];
-                if (entity.Equipment.ContainsKey(slot))
-                    entity.Equipment.Remove(slot);
-                if (item != null)
-                    entity.Equipment[slot] = item;
-                DispatchBotEvent(bot => bot.OnEntityEquipment(entities[entityid], slot, item));
+                if (entities.ContainsKey(entityid))
+                {
+                    Entity entity = entities[entityid];
+                    if (entity.Equipment.ContainsKey(slot))
+                        entity.Equipment.Remove(slot);
+                    if (item != null)
+                        entity.Equipment[slot] = item;
+                    DispatchBotEvent(bot => bot.OnEntityEquipment(entities[entityid], slot, item));
+                }
             }
         }
 
@@ -1972,12 +1991,15 @@ namespace MinecraftClient
         /// </summary>
         public void OnDestroyEntities(int[] Entities)
         {
-            foreach (int a in Entities)
+            lock (entityLock)
             {
-                if (entities.ContainsKey(a))
+                foreach (int a in Entities)
                 {
-                    DispatchBotEvent(bot => bot.OnEntityDespawn(entities[a]));
-                    entities.Remove(a);
+                    if (entities.ContainsKey(a))
+                    {
+                        DispatchBotEvent(bot => bot.OnEntityDespawn(entities[a]));
+                        entities.Remove(a);
+                    }
                 }
             }
         }
@@ -1992,16 +2014,18 @@ namespace MinecraftClient
         /// <param name="onGround"></param>
         public void OnEntityPosition(int EntityID, Double Dx, Double Dy, Double Dz, bool onGround)
         {
-            if (entities.ContainsKey(EntityID))
+            lock (entityLock)
             {
-                Location L = entities[EntityID].Location;
-                L.X += Dx;
-                L.Y += Dy;
-                L.Z += Dz;
-                entities[EntityID].Location = L;
-                DispatchBotEvent(bot => bot.OnEntityMove(entities[EntityID]));
+                if (entities.ContainsKey(EntityID))
+                {
+                    Location L = entities[EntityID].Location;
+                    L.X += Dx;
+                    L.Y += Dy;
+                    L.Z += Dz;
+                    entities[EntityID].Location = L;
+                    DispatchBotEvent(bot => bot.OnEntityMove(entities[EntityID]));
+                }
             }
-
         }
 
         /// <summary>
@@ -2014,11 +2038,14 @@ namespace MinecraftClient
         /// <param name="onGround"></param>
         public void OnEntityTeleport(int EntityID, Double X, Double Y, Double Z, bool onGround)
         {
-            if (entities.ContainsKey(EntityID))
+            lock (entityLock)
             {
-                Location location = new Location(X, Y, Z);
-                entities[EntityID].Location = location;
-                DispatchBotEvent(bot => bot.OnEntityMove(entities[EntityID]));
+                if (entities.ContainsKey(EntityID))
+                {
+                    Location location = new Location(X, Y, Z);
+                    entities[EntityID].Location = location;
+                    DispatchBotEvent(bot => bot.OnEntityMove(entities[EntityID]));
+                }
             }
         }
 
@@ -2234,31 +2261,34 @@ namespace MinecraftClient
         /// <param name="metadata">The metadata of the entity</param>
         public void OnEntityMetadata(int entityID, Dictionary<int, object> metadata)
         {
-            if (entities.ContainsKey(entityID))
+            lock (entityLock)
             {
-                Entity entity = entities[entityID];
-                entity.Metadata = metadata;
-                if (entity.Type.ContainsItem() && metadata.ContainsKey(7) && metadata[7] != null && metadata[7].GetType() == typeof(Item))
+                if (entities.ContainsKey(entityID))
                 {
-                    Item item = (Item)metadata[7];
-                    if (item == null)
-                        entity.Item = new Item(ItemType.Air, 0, null);
-                    else entity.Item = item;
+                    Entity entity = entities[entityID];
+                    entity.Metadata = metadata;
+                    if (entity.Type.ContainsItem() && metadata.ContainsKey(7) && metadata[7] != null && metadata[7].GetType() == typeof(Item))
+                    {
+                        Item item = (Item)metadata[7];
+                        if (item == null)
+                            entity.Item = new Item(ItemType.Air, 0, null);
+                        else entity.Item = item;
+                    }
+                    if (metadata.ContainsKey(6) && metadata[6] != null && metadata[6].GetType() == typeof(Int32))
+                    {
+                        entity.Pose = (EntityPose)metadata[6];
+                    }
+                    if (metadata.ContainsKey(2) && metadata[2] != null && metadata[2].GetType() == typeof(string))
+                    {
+                        entity.CustomNameJson = metadata[2].ToString();
+                        entity.CustomName = ChatParser.ParseText(metadata[2].ToString());
+                    }
+                    if (metadata.ContainsKey(3) && metadata[3] != null && metadata[3].GetType() == typeof(bool))
+                    {
+                        entity.IsCustomNameVisible = bool.Parse(metadata[3].ToString());
+                    }
+                    DispatchBotEvent(bot => bot.OnEntityMetadata(entity, metadata));
                 }
-                if (metadata.ContainsKey(6) && metadata[6] != null && metadata[6].GetType() == typeof(Int32))
-                {
-                    entity.Pose = (EntityPose)metadata[6];
-                }
-                if (metadata.ContainsKey(2) && metadata[2] != null && metadata[2].GetType() == typeof(string))
-                {
-                    entity.CustomNameJson = metadata[2].ToString();
-                    entity.CustomName = ChatParser.ParseText(metadata[2].ToString());
-                }
-                if (metadata.ContainsKey(3) && metadata[3] != null && metadata[3].GetType() == typeof(bool))
-                {
-                    entity.IsCustomNameVisible = bool.Parse(metadata[3].ToString());
-                }
-                DispatchBotEvent(bot => bot.OnEntityMetadata(entity, metadata));
             }
         }
 

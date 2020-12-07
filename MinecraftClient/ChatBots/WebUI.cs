@@ -30,7 +30,10 @@ namespace MinecraftClient.ChatBots
     // TODO: 
     // Handle disconnect message
     // Handle MCC quit by user
-    // How to redirect all console message?
+    // Start WebUI more early
+    // WebUI authentication
+    // SSL
+    // fallback data channel for WebSocket
     class WebUI : ChatBot
     {
         private int serverPort = 8080;
@@ -41,9 +44,12 @@ namespace MinecraftClient.ChatBots
         public int MessageRelayLimit = 50;
         public Queue<string> MessageCache;
 
-        public WebUI()
+        public McClient ClientHandler;
+
+        public WebUI(McClient c)
         {
             new WebUIResourceLoader();
+            ClientHandler = c;
         }
 
         public override void Initialize()
@@ -81,7 +87,12 @@ namespace MinecraftClient.ChatBots
                 {"This is crazy", dict2 },
                 {"More", new List<float> { 1.11f, 2.123f, 3.1415f, 444 } }
             };
+            var list = new List<Dictionary<string, object>>()
+            {
+                dict, dict2
+            };
             ConsoleIO.WriteLine(JsonMaker.ToJson(dict));
+            ConsoleIO.WriteLine(JsonMaker.ToArray(list));
         }
 
         private void ConsoleIOWriteLineEvent(string text)
@@ -177,11 +188,11 @@ namespace MinecraftClient.ChatBots
             }
             try
             {
-                ConsoleIO.WriteLine(string.Format("Got ws msg: {0}", e.Data));
+                //ConsoleIO.WriteLine(string.Format("Got ws msg: {0}", e.Data));
                 var pair = DataExchange.FromClient(e.Data);
                 string action = pair.Key;
                 string data = pair.Value;
-                ConsoleIO.WriteLine(string.Format("action: {0}, data: {1}", action, data));
+                //ConsoleIO.WriteLine(string.Format("action: {0}, data: {1}", action, data));
                 switch (action.ToLower())
                 {
                     case "input":
@@ -294,6 +305,19 @@ namespace MinecraftClient.ChatBots
             return json.ToString();
         }
 
+        public static string ToArray(List<Dictionary<string, object>> array)
+        {
+            StringBuilder json = new StringBuilder();
+            json.Append("[");
+            for (int i = 0; i < array.Count; i++)
+            {
+                if (i != 0) json.Append(", ");
+                json.Append(ToJson(array[i]));
+            }
+            json.Append("]");
+            return json.ToString();
+        }
+
         /// <summary>
         /// Convert a dictionary to JSON. Only accept string as key. 
         /// </summary>
@@ -340,6 +364,10 @@ namespace MinecraftClient.ChatBots
                 else if (pair.Value is IEnumerable<double>)
                 {
                     json.Append(ToArray(((IEnumerable<double>)pair.Value).ToList()));
+                }
+                else if (pair.Value is List<Dictionary<string, object>>)
+                {
+                    json.Append(ToArray((List<Dictionary<string, object>>)pair.Value));
                 }
                 else if (pair.Value is Dictionary<string, object>
                     || pair.Value is Dictionary<string, string>

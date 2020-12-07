@@ -300,8 +300,6 @@ namespace MinecraftClient
                 }
             }
             else Console.Write(text);
-            if (WriteLineEvent != null) 
-                WriteLineEvent(text);
         }
 
         /// <summary>
@@ -310,6 +308,7 @@ namespace MinecraftClient
         public static void WriteLine(string line)
         {
             Write(line + '\n');
+            WriteLineEvent?.Invoke(line);
         }
 
         /// <summary>
@@ -394,6 +393,7 @@ namespace MinecraftClient
                     }
                 }
                 Console.ForegroundColor = ConsoleColor.Gray;
+                WriteLineEvent?.Invoke(str);
             }
             ConsoleIO.Write('\n');
         }

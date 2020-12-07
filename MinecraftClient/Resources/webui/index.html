@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.css">
 <style>
     html, body { margin: 0; padding: 0; height: 100%; width: 100%; }
     .title {
@@ -11,26 +12,63 @@
         width: 25px;
         height: 25px;
     }
-    #chat {
-        width: 95%;
-        height: 70%;
-        resize: none;
+    #console {
+        width: 850px;
+        height: auto;
+        float: right;
     }
-    #input {
-        width: 70%;
+    #console #chat {
+        width: 850px;
+        height: 500px;
+        border: 2px black solid;
+        overflow-y: scroll;
+        margin: auto;
+        font-family: monospace;
+        background-color: black;
+        color: white;
+        font-size: 14px;
     }
+    #console #chat li {
+        list-style: none;
+        padding: 1px;
+    }
+    #console input[type=text]{
+        width: 100%;
+        font-family: monospace;
+        font-size: 14px;
+        background-color: black;
+        color: white;
+    }
+    #console .input {
+        display: block;
+        overflow: hidden;
+        padding-right:10px;
+    }
+    #console input[type=button]{
+        float: right;
+    }
+</style>
+<style>
+    .gray{color:gray;}
+    .dark-blue{color:darkblue;}
+    .dark-green{color:darkgreen;}
 </style>
 </head>
 
 <body>
     <span class="title"><img src="favicon.ico" class="logo">Minecraft Console Client WebUI</span>
-    <textarea id="chat"></textarea>
-    <input id="input" type="text" onkeypress="submit(event)">
-    <input type="button" onclick="submit()" value="Enter">
+    <div id="console">
+        <div id="chat"></div>
+        <input type="button" onclick="submit()" value="Enter">
+        <span class="input"><input id="input" type="text" onkeypress="submit(event)" placeholder="> Type your message and press Enter"></span>
+    </div>
     <div id="log"></div>
 
 <!-- Taken from https://github.com/ChrisHouston/s -->
-<script type="text/javascript">!function(){function a(b,c){return a.find(b,c)}function b(c){for(var d=this,e=0;e<c.length;e++)this[e]=c[e];this.length=c.length,this.addClass=function(b){for(var c=d.length-1;c>-1;c--)a.addClass(d[c],b);return d},this.removeClass=function(b){for(var c=d.length-1;c>-1;c--)a.removeClass(d[c],b);return d},this.hasClass=function(a){try{return d[0].className.split(" ").indexOf(a)>-1}catch(a){return!1}return!1},this.toggleClass=function(b){for(var c=d.length-1;c>-1;c--)d[c].className.indexOf(b)>-1?a.removeClass(d[c],b):a.addClass(d[c],b);return d},this.css=function(b){for(var c=d.length-1;c>-1;c--)a.css(d[c],b);return d},this.data=function(b,c){for(var e,f,g=d.length-1;g>-1;g--)f=a.data(d[g],b,c),void 0!=f&&(e=f);return e},this.find=function(c){for(var e=[],f=0;f<d.length;f++)for(var g=a.find(c,d[f]),h=0;h<g.length;h++)e.push(g[h]);return new b(e)},this.on=function(b,c){for(var e=d.length-1;e>-1;e--)a.listen(d[e],b,c);return d},this.off=function(b,c){for(var e=d.length-1;e>-1;e--)a.stopListening(d[e],b,c);return d},this.trigger=function(b){for(var c=d.length-1;c>-1;c--)a.dispatch(d[c],b);return d}}a.addClass=function(a,b){var c=a.className&&a.className.length>0?a.className.split(" "):[];c.indexOf(b)<0&&c.push(b),a.className=c.join(" ")},a.removeClass=function(a,b){var c=a.className&&a.className.length>0?a.className.split(" "):[],d=c.indexOf(b);d>-1&&c.splice(d,1),a.className=c.join(" ")},a.css=function(a,b){for(var c in b)a.style[c]=b[c]},a.data=function(a,b,c){if(void 0!=c)return a.setAttribute("data-"+b,c);try{return a.getAttribute("data-"+b)}catch(a){return}},a.find=function(a,c){if(c=c||document,a instanceof HTMLElement)return new b([a]);var d=[],e=a.charAt(0),f=a.substr(1),g=!0,h=a.charCodeAt(0);if((46==h||35==h||h>96&&h<123)&&(g=!1),!g)for(var i="*,>+~]:)#. ",j=i.length-1;j>-1;j--){for(var l=(i[j],a.length-1);l>0;l--)a.charAt(l)==i[j]&&(g=!0);if(g)break}if(g)d=c.querySelectorAll(a);else switch(e){case"#":var m=document.getElementById(f);if(m)for(var n=m.parentElement;n;){if(n==c||c==document){d=[m];break}n=n.parentElement}break;case".":d=c.getElementsByClassName(a.substr(1));break;default:d=c.getElementsByTagName(a)}return new b(d)},a.on=function(a,b,c){a.addEventListener?a.addEventListener(b,c,!1):a.attachEvent&&htmlEvents["on"+b]?a.attachEvent("on"+b,c):a["on"+b]=c},a.off=function(a,b,c){a.removeEventListener?a.removeEventListener(b,c,!1):a.detachEvent&&htmlEvents["on"+b]?a.detachEvent("on"+b,c):a["on"+b]=null},a.trigger=function(a,b){var c;try{c=new Event(b,{bubbles:!0,cancelable:!0})}catch(a){document.createEvent?(c=document.createEvent("HTMLEvents"),c.initEvent(b,!0,!0)):document.createEventObject&&(c=document.createEventObject(),c.eventType=b)}c.eventName=b,a.dispatchEvent?a.dispatchEvent(c):a.fireEvent&&htmlEvents["on"+b]?a.fireEvent("on"+c.eventType,c):a[b]?a[b]():a["on"+b]&&a["on"+b]()},window.s=window.s||a}();
+<script type="text/javascript">
+    function s(selectors){
+        return document.querySelector(selectors);
+    }
 </script>
 <script type="text/javascript">
     let lastHeartBeat = Date.now();
@@ -39,21 +77,35 @@
     let retry = maxRetry;
     let host = location.host;
     let ws; // = new WebSocket("ws://" + host + "/data");
+    if (!host){ // html file is opened directly
+        host = "localhost:8080";
+    }
     wsConnect("ws://" + host + "/data");
 
     function submit(event){
         if (event){
             if (event.keyCode !== 13) return;
         }
-        let text = s("#input")[0].value;
+        let text = s("#input").value;
         ws.send(toServer("input", text));
         appendChat(">" + text + "\n");
-        s("#input")[0].value = "";
+        s("#input").value = "";
     }
 
     function appendChat(line){
-        s("#chat")[0].value += line;// + "\n";
-        scrollToBottom("chat");
+        lines = line.split("\n");
+        lines.forEach(l=>{
+            if (l === "" || l === "\n") return;
+            //let el = document.createElement("li");
+            //el.appendChild(document.createTextNode(l))
+            s("#chat").appendChild(getColored(l));
+            scrollToBottom("chat");
+        });
+        if (s("#chat").childElementCount > 100){
+            for (let i = 0; i < (s("#chat").childElementCount - 100); i++){
+                s("#chat").children[0].remove();
+            }
+        }
     }
 
     function scrollToBottom(id){
@@ -73,6 +125,68 @@
         return str.replace(colorCodeReg, "");
     }
 
+    function getColored(str){
+        let colored = "";
+        let isCode = false;
+        let hasColorBefore = false;
+        let el = document.createElement("div");
+        for(let i = 0; i < str.length; i++){
+            if (isCode){
+                let color = colorCodeToColor(str[i]);
+                colored += `<span style="color:${color};">`;
+                isCode = false;
+                hasColorBefore = true;
+                continue;
+            }
+            if (str[i] != String.fromCharCode(167)){
+                colored += escapeHtml(str[i]);
+            }else{
+                isCode = true;
+                if (hasColorBefore){
+                    colored += "</span>";
+                    hasColorBefore = false;
+                }
+            }
+        }
+        if (hasColorBefore){
+            colored += "</span>";
+        }
+        el.innerHTML = colored;
+        return el;
+    }
+
+    function colorCodeToColor(code){ // without that sign
+        switch(code){
+            case '0': return "gray"; // Should be black but it is not visable
+            case '1': return "darkblue";
+            case '2': return "darkgreen";
+            case '3': return "darkcyan";
+            case '4': return "darkred";
+            case '5': return "darkmagenta";
+            case '6': return "darkyellow";
+            case '7': return "gray";
+            case '8': return "darkgray";
+            case '9': return "blue";
+            case 'a': return "green";
+            case 'b': return "cyan";
+            case 'c': return "red";
+            case 'd': return "magenta";
+            case 'e': return "yellow";
+            case 'f': return "white";
+            case 'r': return "white";
+            default: return "while";
+        }
+    }
+
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     function wsConnect(host){
         ws = new WebSocket(host);
         ws.onmessage = wsOnMessage;
@@ -88,7 +202,7 @@
         
         switch (action){
             case "chat":{
-                appendChat(removeColorChar(data));
+                appendChat(data);
                 break;
             }
             case "pong":{
@@ -96,7 +210,7 @@
                 break;
             }
             default: {
-                if (data) s("#log")[0].innerText += data + "\n";
+                if (data) s("#log").innerText += data + "\n";
             }
         }
     }
@@ -116,6 +230,7 @@
         appendChat("Connection to MCC lost. Wait 5 seconds before reconnect.");
         if (retry <= 0){
             appendChat("Retry attempt exceeded.");
+            appendChat("Not able to reconnect. Please check your MCC client status and refresh the page");
             alert("Not able to reconnect.\nPlease check your MCC client status and refresh the page");
             return;
         }else{
