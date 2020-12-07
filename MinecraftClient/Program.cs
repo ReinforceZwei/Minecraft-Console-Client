@@ -114,6 +114,8 @@ namespace MinecraftClient
                     }
                 }
             }
+            new ChatBots.WebUIResourceLoader();
+            new ChatBots.WebUIStandAlone();
 
             if (Settings.ConsoleTitle != "")
             {

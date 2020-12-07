@@ -200,7 +200,7 @@ namespace MinecraftClient
                     if (Settings.AutoDrop_Enabled) { BotLoad(new AutoDrop(Settings.AutoDrop_Mode, Settings.AutoDrop_items)); }
                     if (Settings.ReplayMod_Enabled) { BotLoad(new ReplayCapture(Settings.ReplayMod_BackupInterval)); }
                     
-                    if (WebUIEnabled) BotLoad(new WebUI(this));
+                    //if (WebUIEnabled) BotLoad(new WebUI(this));
                     //Add your ChatBot here by uncommenting and adapting
                     //BotLoad(new ChatBots.YourBot());
                 }
@@ -1694,6 +1694,9 @@ namespace MinecraftClient
             UpdateLocation(location, yaw, pitch);
         }
 
+        public delegate void OnServerMessage(string text);
+        public event OnServerMessage OnMsg;
+
         /// <summary>
         /// Received some text from the server
         /// </summary>
@@ -1714,6 +1717,7 @@ namespace MinecraftClient
                 json = text;
                 text = ChatParser.ParseText(json, links);
             }
+            OnMsg?.Invoke(text);
 
             ConsoleIO.WriteLineFormatted(text, true);
 

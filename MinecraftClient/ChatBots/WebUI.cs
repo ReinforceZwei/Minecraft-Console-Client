@@ -27,6 +27,147 @@ namespace MinecraftClient.ChatBots
         }
     }
 
+    public class WebUIStandAlone
+    {
+        protected int serverPort = 8080;
+        public HttpServer http;
+        public WebSocketServiceHost host;
+
+        public WebUIStandAlone() 
+        {
+            http = new HttpServer(serverPort);
+            http.OnGet += HttpOnGet;
+            http.AddWebSocketService("/data", delegate (DataChannelStandAlone d) { d.SetRef(this); });
+            http.WebSocketServices.TryGetServiceHost("/data", out host);
+            http.Start();
+            if (http.IsListening)
+            {
+                ConsoleIO.WriteLine("Http server listening on port " + serverPort);
+            }
+            else
+            {
+                ConsoleIO.WriteLine("Http server is not listening. Something went wrong?");
+            }
+            Console.ReadKey();
+        }
+
+        private void HttpOnGet(object sender, HttpRequestEventArgs e)
+        {
+            var req = e.Request;
+            var res = e.Response;
+
+            string path = req.RawUrl;
+            if (path == "/")
+            {
+                path = "index";
+                byte[] content = Encoding.UTF8.GetBytes(WebUIResource.ResourceManager.GetString(path));
+                res.ContentType = "text/html";
+                res.ContentLength64 = content.Length;
+                res.Close(content, true);
+                return;
+            }
+            else if (path == "/favicon.ico")
+            {
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    WebUIResource.AppIcon.Save(ms);
+                    byte[] ico = ms.ToArray();
+                    ms.Close();
+                    res.ContentType = "image/x-icon";
+                    res.ContentLength64 = ico.Length;
+                    res.Close(ico, true);
+                    return;
+                }
+            }
+            else
+            {
+                res.StatusCode = 404;
+                res.Close();
+                return;
+            }
+        }
+    }
+
+    class DataChannelStandAlone : WebSocketBehavior
+    {
+        public WebUIStandAlone botEvent;
+        public DataChannelStandAlone() : this(null) { }
+        public DataChannelStandAlone(WebUIStandAlone eventRef)
+        {
+            botEvent = eventRef;
+        }
+
+        public void SetRef(WebUIStandAlone w)
+        {
+            botEvent = w;
+        }
+
+        protected override void OnOpen()
+        {
+            
+        }
+
+        protected override void OnMessage(MessageEventArgs e)
+        {
+            if (ConnectionState != WebSocketState.Open)
+            {
+                ConsoleIO.WriteLine("Ws connection not up but data incoming");
+                return;
+            }
+            try
+            {
+                //ConsoleIO.WriteLine(string.Format("Got ws msg: {0}", e.Data));
+                var pair = DataExchange.FromClient(e.Data);
+                string action = pair.Key;
+                string data = pair.Value;
+                //ConsoleIO.WriteLine(string.Format("action: {0}, data: {1}", action, data));
+                switch (action.ToLower())
+                {
+                    case "ping":
+                        Send(DataExchange.ToClient("pong", ""));
+                        break;
+
+                    case "new":
+                        {
+                            //Json.JSONData info = Json.ParseJson(data);
+                            int rnd = new Random().Next(0, 9999);
+                            McClient client = new McClient("test" + rnd, "0", "", 754, null, "localhost", 25565);
+                            var h = new wwww(botEvent, rnd);
+                            client.OnMsg += h.OnMsg;
+                            break;
+                        }
+                    default:
+                        //Send(e.Data);
+                        break;
+                }
+            }
+            catch (Exception exception)
+            {
+                ConsoleIO.WriteLine("Got exception while handling WebClient message:\n" + exception.Message);
+            }
+        }
+
+        private void ClientOnMsg(string text)
+        {
+            Sessions.Broadcast(DataExchange.ToClient("chat", text));
+        }
+    }
+
+    class wwww
+    {
+        private WebUIStandAlone A;
+        private int uid;
+        public wwww(WebUIStandAlone a, int uid)
+        {
+            A = a;
+            this.uid = uid;
+        }
+        public void OnMsg(string text)
+        {
+            A.host.Sessions.Broadcast(DataExchange.ToClient("chatuid", uid + "|" + text));
+        }
+    }
+
     // TODO: 
     // Handle disconnect message
     // Handle MCC quit by user

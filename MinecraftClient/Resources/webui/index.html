@@ -209,6 +209,12 @@
                 onHeartBeat();
                 break;
             }
+            case "chatuid":{
+                let d = data.split("|");
+                let id = d[0];
+                let t = d[1];
+                appendChat("Client" + id + ": " + data);
+            }
             default: {
                 if (data) s("#log").innerText += data + "\n";
             }
