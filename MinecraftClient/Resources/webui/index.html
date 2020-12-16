@@ -213,7 +213,7 @@
                 let d = data.split("|");
                 let id = d[0];
                 let t = d[1];
-                appendChat("Client" + id + ": " + data);
+                appendChat("Client" + id + "| " + t);
             }
             default: {
                 if (data) s("#log").innerText += data + "\n";
@@ -237,7 +237,7 @@
         if (retry <= 0){
             appendChat("Retry attempt exceeded.");
             appendChat("Not able to reconnect. Please check your MCC client status and refresh the page");
-            alert("Not able to reconnect.\nPlease check your MCC client status and refresh the page");
+            //alert("Not able to reconnect.\nPlease check your MCC client status and refresh the page");
             return;
         }else{
             setTimeout(()=>{

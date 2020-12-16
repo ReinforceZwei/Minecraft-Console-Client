@@ -51,6 +51,13 @@ namespace MinecraftClient
                 throw new InvalidOperationException(Translations.Get("exception.chatbot.init"));
             }
         }
+        protected Settings Settings
+        {
+            get
+            {
+                return Handler.Settings;
+            }
+        }
 
         /* ================================================== */
         /*   Main methods to override for creating your bot   */
@@ -434,7 +441,7 @@ namespace MinecraftClient
         /// <param name="message">if it's a private message, this will contain the message</param>
         /// <param name="sender">if it's a private message, this will contain the player name that sends the message</param>
         /// <returns>Returns true if the text is a private message</returns>
-        public static bool IsPrivateMessage(string text, ref string message, ref string sender)
+        public bool IsPrivateMessage(string text, ref string message, ref string sender)
         {
             if (String.IsNullOrEmpty(text))
                 return false;
@@ -545,7 +552,7 @@ namespace MinecraftClient
         /// <param name="message">if it's message, this will contain the message</param>
         /// <param name="sender">if it's message, this will contain the player name that sends the message</param>
         /// <returns>Returns true if the text is a chat message</returns>
-        public static bool IsChatMessage(string text, ref string message, ref string sender)
+        public bool IsChatMessage(string text, ref string message, ref string sender)
         {
             if (String.IsNullOrEmpty(text))
                 return false;
@@ -648,7 +655,7 @@ namespace MinecraftClient
         /// <param name="text">Text to parse</param>
         /// <param name="sender">Will contain the sender's username, if it's a teleport request</param>
         /// <returns>Returns true if the text is a teleport request</returns>
-        public static bool IsTeleportRequest(string text, ref string sender)
+        public bool IsTeleportRequest(string text, ref string sender)
         {
             if (String.IsNullOrEmpty(text))
                 return false;

@@ -18,7 +18,7 @@ namespace MinecraftClient.Commands
                 string[] temp = getArg(command).Split('=');
                 if (temp.Length > 1)
                 {
-                    if (Settings.SetVar(temp[0], getArg(command).Substring(temp[0].Length + 1)))
+                    if (handler.Settings.SetVar(temp[0], getArg(command).Substring(temp[0].Length + 1)))
                     {
                         return ""; //Success
                     }

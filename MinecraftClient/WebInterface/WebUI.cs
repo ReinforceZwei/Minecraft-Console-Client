@@ -9,7 +9,7 @@ using System.Reflection;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 
-namespace MinecraftClient.ChatBots
+namespace MinecraftClient.WebInterface
 {
     public class WebUIResourceLoader
     {
@@ -27,15 +27,33 @@ namespace MinecraftClient.ChatBots
         }
     }
 
+    /*
+     * Communication
+     *   Http API: Basic query (create/list/manage instances)
+     *   WebSocket: Communicate with instance
+     *       - Each instance has it own endpoint (/instance1, /instance2, ...)
+     * 
+     * Each WebSocketBehavior manage one McClient
+     */
+
+
     public class WebUIStandAlone
     {
         protected int serverPort = 8080;
         public HttpServer http;
         public WebSocketServiceHost host;
 
+        public Dictionary<int, McClient> ActiveMcClient = new Dictionary<int, McClient>();
+
+        public ApiHelper ApiController;
+
         public WebUIStandAlone() 
         {
             http = new HttpServer(serverPort);
+
+            ApiController = new ApiHelper();
+            RegisterController();
+
             http.OnGet += HttpOnGet;
             http.AddWebSocketService("/data", delegate (DataChannelStandAlone d) { d.SetRef(this); });
             http.WebSocketServices.TryGetServiceHost("/data", out host);
@@ -51,35 +69,47 @@ namespace MinecraftClient.ChatBots
             Console.ReadKey();
         }
 
-        private void HttpOnGet(object sender, HttpRequestEventArgs e)
+        private void RegisterController()
         {
-            var req = e.Request;
-            var res = e.Response;
+            ApiController.AddController("/", Index);
+            ApiController.AddController("/index.html", Index);
+            ApiController.AddController("/favicon.ico", Favicon);
+        }
 
-            string path = req.RawUrl;
-            if (path == "/")
+        #region Api Controllers
+
+        private void Index(HttpRequestEventArgs e)
+        {
+            var res = e.Response;
+            byte[] content = Encoding.UTF8.GetBytes(WebUIResource.ResourceManager.GetString("index"));
+            res.ContentType = "text/html";
+            res.ContentLength64 = content.Length;
+            res.Close(content, true);
+            return;
+        }
+
+        private void Favicon(HttpRequestEventArgs e)
+        {
+            var res = e.Response;
+            using (MemoryStream ms = new MemoryStream())
             {
-                path = "index";
-                byte[] content = Encoding.UTF8.GetBytes(WebUIResource.ResourceManager.GetString(path));
-                res.ContentType = "text/html";
-                res.ContentLength64 = content.Length;
-                res.Close(content, true);
+                WebUIResource.AppIcon.Save(ms);
+                byte[] ico = ms.ToArray();
+                ms.Close();
+                res.ContentType = "image/x-icon";
+                res.ContentLength64 = ico.Length;
+                res.Close(ico, true);
                 return;
             }
-            else if (path == "/favicon.ico")
-            {
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    WebUIResource.AppIcon.Save(ms);
-                    byte[] ico = ms.ToArray();
-                    ms.Close();
-                    res.ContentType = "image/x-icon";
-                    res.ContentLength64 = ico.Length;
-                    res.Close(ico, true);
-                    return;
-                }
-            }
-            else
+        }
+
+        #endregion
+
+        private void HttpOnGet(object sender, HttpRequestEventArgs e)
+        {
+            var res = e.Response;
+            string path = e.Request.Url.LocalPath;
+            if (!ApiController.TryCall(path, e))
             {
                 res.StatusCode = 404;
                 res.Close();
@@ -88,18 +118,64 @@ namespace MinecraftClient.ChatBots
         }
     }
 
+    public class ApiHelper
+    {
+        public delegate void ApiController(HttpRequestEventArgs e);
+        public Dictionary<string, ApiController> Controller = new Dictionary<string, ApiController>();
+
+        public bool AddController(string path, ApiController controller)
+        {
+            if (!Controller.ContainsKey(path))
+            {
+                Controller.Add(path, controller);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool RemoveController(string path)
+        {
+            if (Controller.ContainsKey(path))
+            {
+                Controller.Remove(path);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool TryCall(string path, HttpRequestEventArgs e)
+        {
+            if (Controller.ContainsKey(path))
+            {
+                Controller[path].Invoke(e);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+
+    // Each client has their own object. Do not create any collection here
     class DataChannelStandAlone : WebSocketBehavior
     {
-        public WebUIStandAlone botEvent;
+        public WebUIStandAlone handler;
         public DataChannelStandAlone() : this(null) { }
         public DataChannelStandAlone(WebUIStandAlone eventRef)
         {
-            botEvent = eventRef;
+            handler = eventRef;
         }
 
         public void SetRef(WebUIStandAlone w)
         {
-            botEvent = w;
+            handler = w;
         }
 
         protected override void OnOpen()
@@ -131,9 +207,23 @@ namespace MinecraftClient.ChatBots
                         {
                             //Json.JSONData info = Json.ParseJson(data);
                             int rnd = new Random().Next(0, 9999);
-                            McClient client = new McClient("test" + rnd, "0", "", 754, null, "localhost", 25565);
-                            var h = new wwww(botEvent, rnd);
-                            client.OnMsg += h.OnMsg;
+                            var logger = new WebInterface.LogCollector(rnd);
+                            logger.OnLog += ClientOnMsg;
+                            McClient client = new McClient(new Settings(), logger, "test" + rnd, "0", "", 754, null, "localhost", 25565);
+                            var eventEmitter = new ChatBotEventListener(client, rnd);
+                            eventEmitter.Disconnect += ClientOnDisconnect;
+                            handler.ActiveMcClient.Add(rnd, client);
+                            break;
+                        }
+                    case "input":
+                        {
+                            string[] parts = data.Split(new char[] { '|' }, 2);
+                            int uid;
+                            bool result = int.TryParse(parts[0], out uid);
+                            if (result && handler.ActiveMcClient.ContainsKey(uid))
+                            {
+                                handler.ActiveMcClient[uid].SendText(parts[1]);
+                            }
                             break;
                         }
                     default:
@@ -147,24 +237,34 @@ namespace MinecraftClient.ChatBots
             }
         }
 
-        private void ClientOnMsg(string text)
+        private void ClientOnMsg(object sender, LogCollector.OnLogEventArgs eventArgs)
         {
-            Sessions.Broadcast(DataExchange.ToClient("chat", text));
+            Sessions.Broadcast(DataExchange.ToClient("chatuid", eventArgs.InstanceID + "|" + eventArgs.Text));
+        }
+
+        private void ClientOnDisconnect(int instanceID)
+        {
+            handler.ActiveMcClient.Remove(instanceID);
         }
     }
 
-    class wwww
+    class ChatBotEventListener : ChatBot
     {
-        private WebUIStandAlone A;
-        private int uid;
-        public wwww(WebUIStandAlone a, int uid)
+        private int instanceID;
+        public delegate void InstanceEvent(int instanceID);
+
+        public event InstanceEvent Disconnect;
+
+        public ChatBotEventListener(McClient client, int uid)
         {
-            A = a;
-            this.uid = uid;
+            instanceID = uid;
+            client.BotLoad(this);
         }
-        public void OnMsg(string text)
+
+        public override bool OnDisconnect(DisconnectReason reason, string message)
         {
-            A.host.Sessions.Broadcast(DataExchange.ToClient("chatuid", uid + "|" + text));
+            Disconnect?.Invoke(instanceID);
+            return base.OnDisconnect(reason, message);
         }
     }
 
@@ -340,11 +440,12 @@ namespace MinecraftClient.ChatBots
                         string text = data.Trim();
                         if (text.Length > 0)
                         {
-                            if (Settings.internalCmdChar == ' ' || text[0] == Settings.internalCmdChar)
+                            if (botEvent.ClientHandler.Settings.internalCmdChar == ' ' || text[0] == botEvent.ClientHandler.Settings.internalCmdChar)
                             {
                                 string response_msg = "";
-                                string command = Settings.internalCmdChar == ' ' ? text : text.Substring(1);
-                                if (!botEvent.PerformInternalCommand(Settings.ExpandVars(command), ref response_msg) && Settings.internalCmdChar == '/')
+                                string command = botEvent.ClientHandler.Settings.internalCmdChar == ' ' ? text : text.Substring(1);
+                                if (!botEvent.PerformInternalCommand(botEvent.ClientHandler.Settings.ExpandVars(command), ref response_msg) 
+                                    && botEvent.ClientHandler.Settings.internalCmdChar == '/')
                                 {
                                     botEvent.SendText(text);
                                 }

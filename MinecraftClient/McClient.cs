@@ -22,6 +22,8 @@ namespace MinecraftClient
     {
         public static int ReconnectionAttemptsLeft = 0;
 
+        public Settings Settings;
+
         private static readonly List<string> cmd_names = new List<string>();
         private static readonly Dictionary<string, Command> cmds = new Dictionary<string, Command>();
         private readonly Dictionary<Guid, string> onlinePlayers = new Dictionary<Guid, string>();
@@ -119,6 +121,7 @@ namespace MinecraftClient
         IMinecraftCom handler;
         Thread cmdprompt;
         Thread timeoutdetector;
+        WebInterface.ILogger logger;
 
         /// <summary>
         /// Starts the main chat client
@@ -129,8 +132,10 @@ namespace MinecraftClient
         /// <param name="server_ip">The server IP</param>
         /// <param name="port">The server port to use</param>
         /// <param name="protocolversion">Minecraft protocol version to use</param>
-        public McClient(string username, string uuid, string sessionID, int protocolversion, ForgeInfo forgeInfo, string server_ip, ushort port)
+        public McClient(Settings settings, WebInterface.ILogger logger, string username, string uuid, string sessionID, int protocolversion, ForgeInfo forgeInfo, string server_ip, ushort port)
         {
+            Settings = settings;
+            this.logger = logger ?? new WebInterface.LogCollector();
             StartClient(username, uuid, sessionID, server_ip, port, protocolversion, forgeInfo, false, "");
         }
 
@@ -144,8 +149,9 @@ namespace MinecraftClient
         /// <param name="port">The server port to use</param>
         /// <param name="protocolversion">Minecraft protocol version to use</param>
         /// <param name="command">The text or command to send.</param>
-        public McClient(string username, string uuid, string sessionID, string server_ip, ushort port, int protocolversion, ForgeInfo forgeInfo, string command)
+        public McClient(Settings settings, string username, string uuid, string sessionID, string server_ip, ushort port, int protocolversion, ForgeInfo forgeInfo, string command)
         {
+            Settings = settings;
             StartClient(username, uuid, sessionID, server_ip, port, protocolversion, forgeInfo, true, command);
         }
 
@@ -251,14 +257,14 @@ namespace MinecraftClient
                 }
                 catch (Exception e)
                 {
-                    ConsoleIO.WriteLineFormatted("§8" + e.GetType().Name + ": " + e.Message);
+                    logger.Error("§8" + e.GetType().Name + ": " + e.Message);
                     Translations.WriteLine("error.join");
                     retry = true;
                 }
             }
             catch (SocketException e)
             {
-                ConsoleIO.WriteLineFormatted("§8" + e.Message);
+                logger.Error("§8" + e.Message);
                 Translations.WriteLine("error.connect");
                 retry = true;
             }
@@ -267,7 +273,7 @@ namespace MinecraftClient
             {
                 if (ReconnectionAttemptsLeft > 0)
                 {
-                    ConsoleIO.WriteLogLine(Translations.Get("mcc.reconnect", ReconnectionAttemptsLeft));
+                    logger.Info(Translations.Get("mcc.reconnect", ReconnectionAttemptsLeft));
                     Thread.Sleep(5000);
                     ReconnectionAttemptsLeft--;
                     Program.Restart();
@@ -320,7 +326,7 @@ namespace MinecraftClient
                                 }
                                 else if (response_msg.Length > 0)
                                 {
-                                    ConsoleIO.WriteLogLine(response_msg);
+                                    logger.Info(response_msg);
                                 }
                             }
                             else SendText(text);
@@ -398,7 +404,7 @@ namespace MinecraftClient
                     {
                         if (!(e is ThreadAbortException))
                         {
-                            ConsoleIO.WriteLogLine(Translations.Get("icmd.error", bot.ToString(), e.ToString()));
+                            logger.Error(Translations.Get("icmd.error", bot.ToString(), e.ToString()));
                         }
                         else throw; //ThreadAbortException should not be caught
                     }
@@ -434,7 +440,8 @@ namespace MinecraftClient
                         }
                         catch (Exception e)
                         {
-                            ConsoleIO.WriteLogLine(e.Message);
+                            // FIXME: ChatBotCommand got loaded and throw System.MissingMethodException
+                            logger.Error("Error while loading internal commands: {0}\n{1}\n{2}\n{3}", e.GetType(), e.Message, e.StackTrace, type.Name);
                         }
                     }
                 }
@@ -493,17 +500,17 @@ namespace MinecraftClient
             {
                 case ChatBot.DisconnectReason.ConnectionLost:
                     message = Translations.Get("mcc.disconnect.lost");
-                    ConsoleIO.WriteLine(message);
+                    logger.Info(message);
                     break;
 
                 case ChatBot.DisconnectReason.InGameKick:
                     Translations.WriteLine("mcc.disconnect.server");
-                    ConsoleIO.WriteLineFormatted(message);
+                    logger.Info(message);
                     break;
 
                 case ChatBot.DisconnectReason.LoginRejected:
-                    ConsoleIO.WriteLine("mcc.disconnect.login");
-                    ConsoleIO.WriteLineFormatted(message);
+                    logger.Info("mcc.disconnect.login");
+                    logger.Info(message);
                     break;
 
                 case ChatBot.DisconnectReason.UserLogout:
@@ -520,7 +527,7 @@ namespace MinecraftClient
                 {
                     if (!(e is ThreadAbortException))
                     {
-                        ConsoleIO.WriteLogLine("OnDisconnect: Got error from " + bot.ToString() + ": " + e.ToString());
+                        logger.Error("OnDisconnect: Got error from " + bot.ToString() + ": " + e.ToString());
                     }
                     else throw; //ThreadAbortException should not be caught
                 }
@@ -545,7 +552,7 @@ namespace MinecraftClient
                 {
                     if (!(e is ThreadAbortException))
                     {
-                        ConsoleIO.WriteLogLine("Update: Got error from " + bot.ToString() + ": " + e.ToString());
+                        logger.Error("Update: Got error from " + bot.ToString() + ": " + e.ToString());
                     }
                     else throw; //ThreadAbortException should not be caught
                 }
@@ -1525,7 +1532,7 @@ namespace MinecraftClient
                         string parentMethodName = method.Name;
 
                         //Display a meaningful error message to help debugging the ChatBot
-                        ConsoleIO.WriteLogLine(parentMethodName + ": Got error from " + bot.ToString() + ": " + e.ToString());
+                        logger.Error(parentMethodName + ": Got error from " + bot.ToString() + ": " + e.ToString());
                     }
                     else throw; //ThreadAbortException should not be caught here as in can happen when disconnecting from server
                 }
@@ -1702,11 +1709,17 @@ namespace MinecraftClient
         /// </summary>
         /// <param name="text">Text received</param>
         /// <param name="isJson">TRUE if the text is JSON-Encoded</param>
-        public void OnTextReceived(string text, bool isJson)
+        public void OnTextReceived(string text, bool isJson, int messageType)
         {
             lock (lastKeepAliveLock)
             {
                 lastKeepAlive = DateTime.Now;
+            }
+
+            if ((!Settings.DisplaySystemMessages && messageType == 1)
+                ||(!Settings.DisplayXPBarMessages && messageType == 2))
+            {
+                return;
             }
 
             List<string> links = new List<string>();
@@ -1719,11 +1732,11 @@ namespace MinecraftClient
             }
             OnMsg?.Invoke(text);
 
-            ConsoleIO.WriteLineFormatted(text, true);
+            logger.Info(text, true);
 
             if (Settings.DisplayChatLinks)
                 foreach (string link in links)
-                    ConsoleIO.WriteLogLine(Translations.Get("mcc.link", link), false);
+                    logger.Info(Translations.Get("mcc.link", link), false);
 
             DispatchBotEvent(bot => bot.GetText(text));
             DispatchBotEvent(bot => bot.GetText(text, json));
@@ -1751,7 +1764,7 @@ namespace MinecraftClient
 
             if (inventoryID != 0)
             {
-                ConsoleIO.WriteLogLine(Translations.Get("extra.inventory_open", inventoryID, inventory.Title));
+                logger.Info(Translations.Get("extra.inventory_open", inventoryID, inventory.Title));
                 Translations.WriteLogLine("extra.inventory_interact");
                 DispatchBotEvent(bot => bot.OnInventoryOpen(inventoryID));
             }
@@ -1768,7 +1781,7 @@ namespace MinecraftClient
 
             if (inventoryID != 0)
             {
-                ConsoleIO.WriteLogLine(Translations.Get("extra.inventory_close", inventoryID));
+                logger.Info(Translations.Get("extra.inventory_close", inventoryID));
                 DispatchBotEvent(bot => bot.OnInventoryClose(inventoryID));
             }
         }

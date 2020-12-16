@@ -28,6 +28,7 @@ namespace MinecraftClient
     static class Program
     {
         private static McClient client;
+        public static Settings Settings;
         public static string[] startupargs;
 
         public const string Version = MCHighestVersion;
@@ -77,6 +78,7 @@ namespace MinecraftClient
             }
 
             //Process ini configuration file
+            Settings = new Settings();
             if (args.Length >= 1 && System.IO.File.Exists(args[0]) && System.IO.Path.GetExtension(args[0]).ToLower() == ".ini")
             {
                 Settings.LoadSettings(args[0]);
@@ -114,8 +116,8 @@ namespace MinecraftClient
                     }
                 }
             }
-            new ChatBots.WebUIResourceLoader();
-            new ChatBots.WebUIStandAlone();
+            new WebInterface.WebUIResourceLoader();
+            new WebInterface.WebUIStandAlone();
 
             if (Settings.ConsoleTitle != "")
             {
@@ -292,9 +294,9 @@ namespace MinecraftClient
                         //Start the main TCP client
                         if (Settings.SingleCommand != "")
                         {
-                            client = new McClient(session.PlayerName, session.PlayerID, session.ID, Settings.ServerIP, Settings.ServerPort, protocolversion, forgeInfo, Settings.SingleCommand);
+                            client = new McClient(Settings, session.PlayerName, session.PlayerID, session.ID, Settings.ServerIP, Settings.ServerPort, protocolversion, forgeInfo, Settings.SingleCommand);
                         }
-                        else client = new McClient(session.PlayerName, session.PlayerID, session.ID, protocolversion, forgeInfo, Settings.ServerIP, Settings.ServerPort);
+                        else client = new McClient(Settings, null, session.PlayerName, session.PlayerID, session.ID, protocolversion, forgeInfo, Settings.ServerIP, Settings.ServerPort);
 
                         //Update console title
                         if (Settings.ConsoleTitle != "")

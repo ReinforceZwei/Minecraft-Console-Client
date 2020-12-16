@@ -323,15 +323,13 @@ namespace MinecraftClient.Protocol.Handlers
                         break;
                     case PacketTypesIn.ChatMessage:
                         string message = dataTypes.ReadNextString(packetData);
+                        byte messageType = 0;
                         if (protocolversion >= MC18Version)
                         {
                             //Hide system messages or xp bar messages?
-                            byte messageType = dataTypes.ReadNextByte(packetData);
-                            if ((messageType == 1 && !Settings.DisplaySystemMessages)
-                                || (messageType == 2 && !Settings.DisplayXPBarMessages))
-                                break;
+                            messageType = dataTypes.ReadNextByte(packetData);
                         }
-                        handler.OnTextReceived(message, true);
+                        handler.OnTextReceived(message, true, messageType);
                         break;
                     case PacketTypesIn.Respawn:
                         if (protocolversion >= MC116Version)

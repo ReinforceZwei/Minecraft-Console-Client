@@ -81,7 +81,9 @@
     <Compile Include="ChatBots\AutoDrop.cs" />
     <Compile Include="ChatBots\Mailer.cs" />
     <Compile Include="ChatBots\ReplayCapture.cs" />
-    <Compile Include="ChatBots\WebUI.cs" />
+    <Compile Include="WebInterface\LogCollector.cs" />
+    <Compile Include="WebInterface\ILogger.cs" />
+    <Compile Include="WebInterface\WebUI.cs" />
     <Compile Include="Commands\Entitycmd.cs" />
     <Compile Include="ChatBots\Alerts.cs" />
     <Compile Include="ChatBots\AntiAFK.cs" />
