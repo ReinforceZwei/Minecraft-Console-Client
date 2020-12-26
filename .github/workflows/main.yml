@@ -29,7 +29,7 @@ jobs:
         uses: microsoft/setup-msbuild@v1
       
       - name: Build project
-        run: msbuild "$GITHUB_WORKSPACE\MinecraftClient.sln"
+        run: msbuild "MinecraftClient.sln"
       
       - name: Create Release
         id: create_release
@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: $GITHUB_WORKSPACE/MinecraftClient/bin/Release/MinecraftClient.exe
+          asset_path: MinecraftClient/bin/Release/MinecraftClient.exe
           asset_name: MinecraftClient.exe
           asset_content_type: application/vnd.microsoft.portable-executable
 
