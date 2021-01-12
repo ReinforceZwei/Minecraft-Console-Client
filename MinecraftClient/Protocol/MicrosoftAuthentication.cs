@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Specialized;
+using System.IO;
 
 namespace MinecraftClient.Protocol
 {
@@ -16,10 +17,12 @@ namespace MinecraftClient.Protocol
         private readonly string userAgent = "Mozilla/5.0 (XboxReplay; XboxLiveAuth/3.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36";
 
         private Regex ppft = new Regex("sFTTag:'.*value=\"(.*)\"\\/>'");
+        private Regex ppft2FA = new Regex("sFT:'(.+?(?='))'"); // PPFT format for 2FA is different
         private Regex urlPost = new Regex("urlPost:'(.+?(?=\'))");
         private Regex confirm = new Regex("identity\\/confirm");
         private Regex invalidAccount = new Regex("Sign in to", RegexOptions.IgnoreCase);
         private Regex twoFA = new Regex("Help us protect your account", RegexOptions.IgnoreCase);
+        private Regex proofIDE = new Regex(":\"(\\d+)\",\"type\":10");
 
         /// <summary>
         /// Pre-authentication
@@ -80,41 +83,36 @@ namespace MinecraftClient.Protocol
 
             if (response.StatusCode >= 300 && response.StatusCode <= 399)
             {
-                string url = response.Headers.Get("Location");
-                string hash = url.Split('#')[1];
-
-                var request2 = new ProxiedWebRequest(url);
-                var response2 = request2.Get();
-
-                if (response2.StatusCode != 200)
-                {
-                    throw new Exception("Authentication failed");
-                }
-
-                if (string.IsNullOrEmpty(hash))
-                {
-                    throw new Exception("Cannot extract access token");
-                }
-                var dict = Request.ParseQueryString(hash);
-
-                //foreach (var pair in dict)
-                //{
-                //    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-                //}
-
-                return new UserLoginResponse()
-                {
-                    AccessToken = dict["access_token"],
-                    RefreshToken = dict["refresh_token"],
-                    ExpiresIn = int.Parse(dict["expires_in"])
-                };
+                return GetAccessTokenFromResponse(response);
             }
             else
             {
                 if (twoFA.IsMatch(response.Body))
                 {
                     // TODO: Handle 2FA
-                    throw new Exception("2FA enabled. Try to disable it in Microsoft account setting");
+                    string ppft = this.ppft2FA.Match(response.Body).Groups[1].Value;
+                    string urlPost = this.urlPost.Match(response.Body).Groups[1].Value;
+                    foreach (string cname in response.Cookies)
+                    {
+                        string cvalue = response.Cookies[cname];
+                        if (!string.IsNullOrEmpty(cvalue))
+                            preAuth.Cookie.Set(cname, cvalue);
+                        else
+                            preAuth.Cookie.Remove(cname);
+                    }
+                    var pre = new PreAuthResponse()
+                    {
+                        PPFT = ppft,
+                        UrlPost = urlPost,
+                        Cookie = preAuth.Cookie
+                    };
+                    return new UserLoginResponse()
+                    {
+                        Is2FA = true,
+                        Email = email,
+                        TwoFAResponse = pre,
+                        TwoFABody = response.Body,
+                    };
                 }
                 else if (invalidAccount.IsMatch(response.Body))
                 {
@@ -122,6 +120,78 @@ namespace MinecraftClient.Protocol
                 }
                 else throw new Exception("Unexpected response. Check your credentials. Response code: " + response.StatusCode);
             }
+        }
+
+        public UserLoginResponse TwoFactorAuthentication(UserLoginResponse loginResponse, string code)
+        {
+            if (loginResponse.Is2FA && loginResponse.TwoFAResponse.HasValue && !string.IsNullOrEmpty(loginResponse.Email))
+            {
+                // If 2FA type is authentictor code, params name will be "otc"
+                // Other types, I am not sure because I dont have that much account for test
+                //
+                // Also the response body doesn't actually contain the main html body.
+                // They are rendered later using js after some other js file is downloaded
+                // We can't really know what is going on besides using a browser
+                string twoFABody = loginResponse.TwoFABody;
+                string ppft = this.ppft2FA.Match(twoFABody).Groups[1].Value;
+                string urlPost = this.urlPost.Match(twoFABody).Groups[1].Value;
+                string proofIDE = this.proofIDE.Match(twoFABody).Groups[1].Value;
+                string email = loginResponse.Email;
+
+                NameValueCollection cookies = loginResponse.TwoFAResponse.Value.Cookie;
+                // params: login, otc, PPFT
+                // Also cookies
+                var request = new ProxiedWebRequest(urlPost, cookies);
+                request.UserAgent = userAgent;
+                string postData = "login=" + Uri.EscapeDataString(email)
+                 + "&otc=" + Uri.EscapeDataString(code)
+                 + "&PPFT=" + Uri.EscapeDataString(ppft)
+                 + "&SentProofIDE=" + Uri.EscapeDataString(proofIDE);
+                var response = request.Post("application/x-www-form-urlencoded", postData);
+                if (response.StatusCode >= 300 && response.StatusCode <= 399)
+                {
+                    return GetAccessTokenFromResponse(response);
+                }
+                else
+                {
+                    //ConsoleIO.WriteLine(response.ToString());
+                    //File.WriteAllText(@"s:\a.html", response.Body);
+                    throw new Exception("Unexpected response. Check your credentials. Response code: " + response.StatusCode);
+                }
+            }
+            else throw new InvalidOperationException("Not 2FA or 2FA data missing");
+        }
+
+        private UserLoginResponse GetAccessTokenFromResponse(ProxiedWebRequest.Response response)
+        {
+            string url = response.Headers.Get("Location");
+            string hash = url.Split('#')[1];
+
+            var request2 = new ProxiedWebRequest(url);
+            var response2 = request2.Get();
+
+            if (response2.StatusCode != 200)
+            {
+                throw new Exception("Authentication failed");
+            }
+
+            if (string.IsNullOrEmpty(hash))
+            {
+                throw new Exception("Cannot extract access token");
+            }
+            var dict = Request.ParseQueryString(hash);
+
+            //foreach (var pair in dict)
+            //{
+            //    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+            //}
+
+            return new UserLoginResponse()
+            {
+                AccessToken = dict["access_token"],
+                RefreshToken = dict["refresh_token"],
+                ExpiresIn = int.Parse(dict["expires_in"])
+            };
         }
 
         /// <summary>
@@ -241,6 +311,10 @@ namespace MinecraftClient.Protocol
 
         public struct UserLoginResponse
         {
+            public bool Is2FA; // true if 2FA enabled
+            public PreAuthResponse? TwoFAResponse; // Only if Is2FA is true
+            public string Email; // Only if Is2FA is true
+            public string TwoFABody; // Only if Is2FA is true
             public string AccessToken;
             public string RefreshToken;
             public int ExpiresIn;

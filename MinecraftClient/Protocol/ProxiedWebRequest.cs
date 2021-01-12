@@ -174,11 +174,12 @@ namespace MinecraftClient.Protocol
                         string[] tmp = cookie[0].Split(new char[] { '=' }, 2); // Split first '=' only
                         string cname = tmp[0].Trim();
                         string cvalue = tmp[1].Trim();
-                        cookies.Add(cname, cvalue);
+                        //if (!string.IsNullOrEmpty(cvalue)) 
+                            cookies.Set(cname, cvalue);
                     }
                     else
                     {
-                        headers.Add(key, value.Trim());
+                        headers.Set(key, value.Trim());
                     }
                 }
                 msg.Dequeue();

@@ -438,6 +438,15 @@ namespace MinecraftClient.Protocol
             try
             {
                 var msaResponse = ms.UserLogin(email, password, ms.PreAuth());
+
+                if (msaResponse.Is2FA)
+                {
+                    ConsoleIO.WriteLine("Account 2FA enabled. Please enter your verification code. It might from email, Authentictor app or MSM");
+                    ConsoleIO.Write("Code: ");
+                    string code = Console.ReadLine();
+                    msaResponse = ms.TwoFactorAuthentication(msaResponse, code);
+                }
+
                 var xblResponse = ms.XblAuthenticate(msaResponse);
                 var xsts = ms.XSTSAuthenticate(xblResponse); // Might throw even password correct
 
