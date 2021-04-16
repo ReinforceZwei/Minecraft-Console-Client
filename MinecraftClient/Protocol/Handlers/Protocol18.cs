@@ -188,7 +188,9 @@ namespace MinecraftClient.Protocol.Handlers
                     int packetID = 0;
                     Queue<byte> packetData = new Queue<byte>();
                     ReadNextPacket(ref packetID, packetData);
+                    PacketTiming.Start(packetPalette.GetIncommingTypeById(packetID));
                     HandlePacket(packetID, new Queue<byte>(packetData));
+                    PacketTiming.Stop();
                 }
             }
             catch (System.IO.IOException) { return false; }
